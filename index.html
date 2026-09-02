@@ -403,6 +403,7 @@ function advanceTutorial() {
     document.getElementById('btn-pet').classList.remove('highlight-element');
     document.getElementById('btn-walk').classList.remove('highlight-element');
     document.getElementById('btn-sleep').classList.remove('highlight-element');
+    document.getElementById('btn-decor').classList.remove('highlight-element');
     
     state.tutorialStep++;
     if(state.tutorialStep > 5) {
@@ -415,23 +416,28 @@ function advanceTutorial() {
 function showTutorialStep() {
     const textEl = document.getElementById('tutorial-text');
     if(state.tutorialStep === 1) {
-        textEl.innerText = "This is the play button to play a mini-game! (Note: Only the dogs and cats have mini-games.)";
         if(state.type === 'dog' || state.type === 'cat') {
+            textEl.innerText = "This is the play button to play a mini-game! (note: only the dogs and cats have mini-games)";
             document.getElementById('btn-play').classList.add('highlight-element');
+        } else {
+            textEl.innerText = "This is the decorate button! Select cozy interior layers to populate your custom habitat room setup.";
+            document.getElementById('btn-decor').classList.add('highlight-element');
         }
     } else if(state.tutorialStep === 2) {
-        textEl.innerText = "This is the market button. Press it to buy some food for your pet!";
+        textEl.innerText = "This is the market button. Press it to buy some food for your pet!'";
         document.getElementById('btn-feed').classList.add('highlight-element');
     } else if(state.tutorialStep === 3) {
-        textEl.innerText = "This is the pet button! Petting your pet gives you coins to buy stuff with!";
+        textEl.innerText = "This is the pet button! petting your pet gives you coins to buy stuff with!\"";
         document.getElementById('btn-pet').classList.add('highlight-element');
     } else if(state.tutorialStep === 4) {
-        textEl.innerText = "This is the Forest walk button! Press this button to take your pet on a walk! (NOTE: This only works for dogs or cats.)";
         if(state.type === 'dog' || state.type === 'cat') {
+            textEl.innerText = "This i the Forest walk button! Press this button to take your pet on a walk! (NOTE: this only works for dogs or cats)";
             document.getElementById('btn-walk').classList.add('highlight-element');
+        } else {
+            advanceTutorial(); 
         }
     } else if(state.tutorialStep === 5) {
-        textEl.innerText = "This is the sleep button! Press it to have your pet take a nap!";
+        textEl.innerText = "This is the sleep button! Press it to have your pet take a nap!\"";
         document.getElementById('btn-sleep').classList.add('highlight-element');
     }
 }
@@ -478,7 +484,6 @@ function closeAllPanels() {
     state.minigame.active = false;
 }
 
-// Stats Updaters
 function updateUIValues() {
     document.getElementById('val-hearts').innerText = state.hearts;
     document.getElementById('val-coins').innerText = state.coins;
@@ -770,6 +775,7 @@ function renderLoop() {
             ctx.fillStyle = '#ccc'; ctx.fillRect(150, 20, 250, 25);
             ctx.fillStyle = '#6ebd71'; ctx.fillRect(240, 20, 70, 25);
             
+            // This calculation loop forces the selector bar to bounce dynamically across frames!
             state.minigame.data.pos += state.minigame.data.dir;
             if(state.minigame.data.pos > 390 || state.minigame.data.pos < 150) state.minigame.data.dir *= -1;
             

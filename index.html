@@ -62,10 +62,8 @@
             margin-bottom: 15px;
             outline: none;
         }
-        /* Menu Screens */
         .screen { display: flex; flex-direction: column; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .breed-select img, .pet-select img { width: 60px; height: 60px; object-fit: contain; }
         .option-card {
             border: 2px solid var(--border-color);
             border-radius: 12px;
@@ -80,7 +78,6 @@
             border-color: var(--accent-color);
             transform: scale(1.02);
         }
-        /* Top Indicators */
         .status-bar {
             display: flex;
             justify-content: space-between;
@@ -93,7 +90,6 @@
         }
         .hearts-display { color: var(--heart-color); font-weight: bold; font-size: 18px; }
         .currency-display { color: #bfa37a; font-weight: bold; font-size: 16px; }
-        /* Main Viewport */
         #viewport-wrapper { position: relative; width: 100%; height: 320px; margin-bottom: 15px; }
         #game-canvas {
             border: 3px solid var(--border-color);
@@ -103,7 +99,6 @@
             height: 100%;
             display: block;
         }
-        /* Thought Bubble Overlay */
         #thought-bubble {
             position: absolute;
             top: 25px;
@@ -131,30 +126,14 @@
             display: block;
             width: 0;
         }
-        #thought-bubble::before {
-            content: '';
-            position: absolute;
-            bottom: -11px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 9px 9px 0;
-            border-style: solid;
-            border-color: var(--text-color) transparent;
-            display: block;
-            width: 0;
-            z-index: -1;
-        }
-        /* Action UI Panels */
-        .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; position: relative; }
         .sub-panel {
             background: #fbf6f0;
             border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 12px;
             margin-top: 10px;
-            animation: slideDown 0.3s ease;
         }
-        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .market-item, .decor-item {
             display: flex;
             justify-content: space-between;
@@ -176,11 +155,48 @@
             border: 1px solid var(--border-color);
             text-align: center;
         }
+        .tutorial-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            border-radius: 20px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 120px;
+            pointer-events: auto;
+        }
+        .tutorial-bubble {
+            background: white;
+            border: 3px solid var(--accent-color);
+            border-radius: 16px;
+            padding: 15px;
+            width: 85%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            text-align: center;
+            margin-bottom: 20px;
+            animation: tutorialBounce 1s infinite alternate;
+        }
+        @keyframes tutorialBounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+        .highlight-element {
+            position: relative;
+            z-index: 25 !important;
+            box-shadow: 0 0 0 6px #fff, 0 0 0 12px var(--accent-color) !important;
+        }
     </style>
 </head>
 <body>
-
 <div id="game-container">
+    <!-- TUTORIAL WINDOW OVERLAY -->
+    <div id="tutorial-screen" class="tutorial-overlay hidden">
+        <div class="tutorial-bubble">
+            <p id="tutorial-text" style="color:var(--text-color); font-weight:bold; margin-bottom:12px;"></p>
+            <button class="btn" style="margin:0;" onclick="advanceTutorial()">Next ➔</button>
+        </div>
+    </div>
+
     <!-- SCREEN 1: WELCOME & TYPE CHOICE -->
     <div id="screen-welcome" class="screen">
         <h1>🏡 Cottagecore Pets 🌿</h1>
@@ -212,6 +228,7 @@
         
         <button class="btn" style="margin-top:20px; width:100%;" onclick="finalizePetCreation()">Bring Home ✨</button>
     </div>
+
     <!-- SCREEN 3: MAIN GAMEPLAY LOOP -->
     <div id="screen-main" class="screen hidden">
         <div class="status-bar">
@@ -271,12 +288,10 @@ const state = {
     isSleeping: false, isWalking: false,
     wantedFood: '', thoughtTimer: 0,
     poops: [], activePanel: null,
-    minigame: { type: '', active: false, score: 0, target: 0, data: {} }
+    minigame: { type: '', active: false, score: 0, target: 0, data: {} },
+    tutorialStep: 0
 };
 
-// Canvas Configuration
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
 const BREEDS = {
     dog: ['Rottweiler', 'Golden Retriever', 'Pomeranian', 'Bulldog', 'Corgi'],
     cat: ['Siamese', 'Black', 'Persian', 'Sphynx', 'Russian Blue'],
@@ -292,11 +307,10 @@ const MARKET_ITEMS = {
 };
 
 const DECOR_ITEMS = {
-    fish: [ {n:'🪸 Neon Coral', c:10, owned:false}, {n:'🏰 Sunken Castle', c:20, owned:false}, {n:'🪵 Little Driftwood', c:8, owned:false} ],
-    lizard: [ {n:'🌿 Hanging Ivy', c:8, owned:false}, {n:'🪵 Basking Log', c:12, owned:false}, {n:'🏜️ Desert Skull', c:18, owned:false} ]
+    fish: [ {n:'🪸 Neon Coral', c:10, owned:false, active:false}, {n:'🏰 Sunken Castle', c:20, owned:false, active:false}, {n:'🪵 Little Driftwood', c:8, owned:false, active:false} ],
+    lizard: [ {n:'🌿 Hanging Ivy', c:8, owned:false, active:false}, {n:'🪵 Basking Log', c:12, owned:false, active:false}, {n:'🏜️ Desert Skull', c:18, owned:false, active:false} ]
 };
 
-// Procedural Visual Representations
 const PALETTES = {
     'Rottweiler': {c1:'#292929', c2:'#c27d38', e:'#ffffff'},
     'Golden Retriever': {c1:'#f2cb80', c2:'#e0b358', e:'#3d2a13'},
@@ -316,7 +330,9 @@ const PALETTES = {
     'Bearded Dragon': {c1:'#dfb15b', c2:'#ca933e', e:'#402e11'}
 };
 
-// --- NAVIGATION & VIEWS ---
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
 function selectPetType(type) {
     state.type = type;
     document.getElementById('screen-welcome').classList.add('hidden');
@@ -336,9 +352,9 @@ function selectPetType(type) {
             state.breed = breed;
         };
         grid.appendChild(card);
+        if(i===0) state.breed = breed;
     });
-    state.breed = BREEDS[type][0];
-    // Toggle Decor functionality based on pet species requirements
+
     if(type === 'fish' || type === 'lizard') {
         document.getElementById('btn-decor').classList.remove('hidden');
         document.getElementById('btn-play').classList.add('hidden');
@@ -368,9 +384,56 @@ function finalizePetCreation() {
     buildMarketUI();
     if(state.type === 'fish' || state.type === 'lizard') buildDecorUI();
     
-    // Core Engine Heartbeat Initialization
+    startTutorial();
+
     setInterval(updateEngine, 1000);
     requestAnimationFrame(renderLoop);
+}
+
+// --- TUTORIAL ENGINE ---
+function startTutorial() {
+    state.tutorialStep = 1;
+    document.getElementById('tutorial-screen').classList.remove('hidden');
+    showTutorialStep();
+}
+
+function advanceTutorial() {
+    document.getElementById('btn-play').classList.remove('highlight-element');
+    document.getElementById('btn-feed').classList.remove('highlight-element');
+    document.getElementById('btn-pet').classList.remove('highlight-element');
+    document.getElementById('btn-walk').classList.remove('highlight-element');
+    document.getElementById('btn-sleep').classList.remove('highlight-element');
+    
+    state.tutorialStep++;
+    if(state.tutorialStep > 5) {
+        document.getElementById('tutorial-screen').classList.add('hidden');
+    } else {
+        showTutorialStep();
+    }
+}
+
+function showTutorialStep() {
+    const textEl = document.getElementById('tutorial-text');
+    if(state.tutorialStep === 1) {
+        textEl.innerText = "This is the play button to play a mini-game! (Note: Only the dogs and cats have mini-games.)";
+        if(state.type === 'dog' || state.type === 'cat') {
+            document.getElementById('btn-play').classList.add('highlight-element');
+        }
+    } else if(state.tutorialStep === 2) {
+        textEl.innerText = "This is the market button. Press it to buy some food for your pet!";
+        document.getElementById('btn-feed').classList.add('highlight-element');
+    } else if(state.tutorialStep === 3) {
+        textEl.innerText = "This is the pet button! Petting your pet gives you coins to buy stuff with!";
+        document.getElementById('btn-pet').classList.add('highlight-element');
+    } else if(state.tutorialStep === 4) {
+        textEl.innerText = "This is the Forest walk button! Press this button to take your pet on a walk! (NOTE: This only works for dogs or cats.)";
+        if(state.type === 'dog' || state.type === 'cat') {
+            document.getElementById('btn-walk').classList.add('highlight-element');
+        }
+    } else if(state.tutorialStep === 5) {
+        textEl.innerText = "This is the sleep button! Press it to have your pet take a nap!";
+        document.getElementById('btn-sleep').classList.add('highlight-element');
+    }
 }
 
 function log(msg) {
@@ -378,21 +441,33 @@ function log(msg) {
     box.innerText = msg;
     box.scrollTop = box.scrollHeight;
 }
-
 function openInteraction(panelType) {
     if(state.isSleeping) { log("Shh... your buddy is asleep right now."); return; }
-    
-    // Close current panel if matching click
-    if(state.activePanel === panelType) {
-        closeAllPanels();
-        return;
-    }
-    
+    if(state.activePanel === panelType) { closeAllPanels(); return; }
     closeAllPanels();
     state.activePanel = panelType;
     
     if(panelType === 'feed') document.getElementById('panel-feed').classList.remove('hidden');
     if(panelType === 'decor') document.getElementById('panel-decor').classList.remove('hidden');
+    
+    if(panelType === 'play') {
+        document.getElementById('panel-minigame').classList.remove('hidden');
+        state.minigame.active = true;
+        if(state.type === 'dog') {
+            document.getElementById('minigame-title').innerText = "Catch the Flying Ball! 🎾";
+            document.getElementById('btn-minigame-action').innerText = "Throw Ball!";
+            state.minigame.type = 'dog_fetch';
+            state.minigame.data = { pos: 150, dir: 4, targetMin: 240, targetMax: 310 };
+        } else if(state.type === 'cat') {
+            document.getElementById('minigame-title').innerText = "Yarn Matcher Game 🧶";
+            document.getElementById('btn-minigame-action').innerText = "Quit Game";
+            state.minigame.type = 'cat_match3';
+            state.minigame.score = 0;
+            state.minigame.target = 50;
+            state.minigame.data = { selectedIdx: null, grid: [] };
+            initCatMatch3();
+        }
+    }
 }
 
 function closeAllPanels() {
@@ -402,6 +477,8 @@ function closeAllPanels() {
     document.getElementById('panel-minigame').classList.add('hidden');
     state.minigame.active = false;
 }
+
+// Stats Updaters
 function updateUIValues() {
     document.getElementById('val-hearts').innerText = state.hearts;
     document.getElementById('val-coins').innerText = state.coins;
@@ -409,9 +486,8 @@ function updateUIValues() {
 
 function petAnimal() {
     if(state.isSleeping) { log("Wake them up gently before petting!"); return; }
-    state.hearts += 2;
-    state.coins += 1;
-    log(`You gently stroke ${state.name}'s soft fur. They lean in happily! (+2 Hearts)`);
+    state.hearts += 2; state.coins += 1;
+    log(`You gently stroke ${state.name}. They lean in happily! (+2 Hearts, +1 Coin)`);
     updateUIValues();
 }
 
@@ -421,7 +497,7 @@ function speakToPet(type) {
     if(type === 'love') {
         log(`You say "I love you ${state.name}!". Their face brightens up immediately! ❤️`);
     } else {
-        log(`You say "Good job!". ${state.name} wags/wiggles proudly! ⭐`);
+        log(`You say "Good job!". ${state.name} wiggles proudly! ⭐`);
     }
     updateUIValues();
 }
@@ -431,7 +507,7 @@ function toggleSleep() {
     state.isSleeping = !state.isSleeping;
     closeAllPanels();
     if(state.isSleeping) {
-        log(`${state.name} curls up snuggly into their knit blanket and falls asleep...`);
+        log(`${state.name} curls up snuggly into their blanket...`);
         document.getElementById('thought-bubble').style.display = 'none';
         document.getElementById('btn-sleep').innerText = '☀️ Wake Up';
     } else {
@@ -446,10 +522,9 @@ function toggleWalk() {
     state.isWalking = !state.isWalking;
     closeAllPanels();
     if(state.isWalking) {
-        log(`You both stroll down the winding country path into the lush green forest. 🌲`);
+        log(`You both stroll into the lush green forest. 🌲`);
         document.getElementById('btn-walk').innerText = '🏡 Return Home';
-        // Spawn a messy spot to clean up occasionally on woodland strolls
-        if(Math.random() > 0.2) {
+        if(Math.random() > 0.1) {
             state.poops.push({ x: 150 + Math.random()*250, y: 240 + Math.random()*30 });
         }
     } else {
@@ -460,22 +535,21 @@ function toggleWalk() {
 
 function cleanMess(index) {
     state.poops.splice(index, 1);
-    state.coins += 5;
-    state.hearts += 1;
+    state.coins += 5; state.hearts += 1;
     log("You tidied up the path! Nature looks beautifully clean again. (+5 Coins)");
     updateUIValues();
 }
+
 function triggerNewThought() {
-    if(state.isSleeping) return;
-    if(state.type === 'fish') {
+    if(state.isSleeping || state.type === 'fish') {
         document.getElementById('thought-bubble').style.display = 'none';
         return;
     }
     const pool = MARKET_ITEMS[state.type];
     state.wantedFood = pool[Math.floor(Math.random() * pool.length)].n;
-    document.getElementById('thought-bubble').innerText = `💭 I want:\n${state.wantedFood}!`;
+    document.getElementById('thought-bubble').innerText = `💭 Want:\n${state.wantedFood}!`;
     document.getElementById('thought-bubble').style.display = 'block';
-    state.thoughtTimer = 25; // standard duration
+    state.thoughtTimer = 25;
 }
 
 function buildMarketUI() {
@@ -492,11 +566,9 @@ function buildMarketUI() {
 function buyFood(name, cost) {
     if(state.coins < cost) { log("You don't have enough village coins yet!"); return; }
     state.coins -= cost;
-    
     if(state.type !== 'fish' && name === state.wantedFood) {
-        state.hearts += 10;
-        state.coins += 8; // bonus reimbursement
-        log(`Perfect match! ${state.name} gobbles up the ${name} ecstatically! (+10 Hearts!)`);
+        state.hearts += 10; state.coins += 8;
+        log(`Perfect match! ${state.name} gobbles up the ${name}! (+10 Hearts!)`);
         document.getElementById('thought-bubble').style.display = 'none';
         state.wantedFood = '';
     } else {
@@ -511,7 +583,6 @@ function buildDecorUI() {
     const container = document.getElementById('decor-items-list');
     container.innerHTML = '';
     if(!DECOR_ITEMS[state.type]) return;
-    
     DECOR_ITEMS[state.type].forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'decor-item';
@@ -526,12 +597,9 @@ function buildDecorUI() {
 function buyDecor(index) {
     const item = DECOR_ITEMS[state.type][index];
     if(state.coins < item.c) { log("Not enough coins for this decoration."); return; }
-    state.coins -= item.c;
-    item.owned = true;
-    item.active = true;
+    state.coins -= item.c; item.owned = true; item.active = true;
     log(`Purchased and placed the lovely ${item.n}!`);
-    updateUIValues();
-    buildDecorUI();
+    updateUIValues(); buildDecorUI();
 }
 
 function toggleDecor(index) {
@@ -544,9 +612,7 @@ function toggleDecor(index) {
 function updateEngine() {
     if(state.wantedFood && !state.isSleeping) {
         state.thoughtTimer--;
-        if(state.thoughtTimer <= 0) {
-            triggerNewThought();
-        }
+        if(state.thoughtTimer <= 0) triggerNewThought();
     }
 }
 // --- INTERACTIVE ACTIONS & MINIGAMES ---
@@ -557,39 +623,45 @@ canvas.addEventListener('click', function(e) {
     
     if(state.isWalking && state.poops.length > 0) {
         state.poops.forEach((p, idx) => {
-            const dist = Math.hypot(mouseX - p.x, mouseY - p.y);
-            if(dist < 20) cleanMess(idx);
+            if(Math.hypot(mouseX - p.x, mouseY - p.y) < 20) cleanMess(idx);
         });
     }
-});
 
-function openInteraction(type) {
-    if(state.isSleeping) { log("Shh... your buddy is asleep right now."); return; }
-    if(state.activePanel === type) { closeAllPanels(); return; }
-    closeAllPanels();
-    state.activePanel = type;
-    
-    if(type === 'feed') document.getElementById('panel-feed').classList.remove('hidden');
-    if(type === 'decor') document.getElementById('panel-decor').classList.remove('hidden');
-    
-    if(type === 'play') {
-        document.getElementById('panel-minigame').classList.remove('hidden');
-        state.minigame.active = true;
-        if(state.type === 'dog') {
-            document.getElementById('minigame-title').innerText = "Catch the Flying Ball! 🎾";
-            document.getElementById('btn-minigame-action').innerText = "Throw Ball!";
-            state.minigame.type = 'dog_fetch';
-            state.minigame.data = { pos: 0, dir: 2, targetMin: 220, targetMax: 300 }; // bar positioning data
-        } else if(state.type === 'cat') {
-            document.getElementById('minigame-title').innerText = "Yarn Matcher Game 🧶";
-            document.getElementById('btn-minigame-action').innerText = "Shuffle and Play Yarn";
-            state.minigame.type = 'cat_match3';
-            state.minigame.score = 0;
-            state.minigame.target = 50;
-            initCatMatch3();
+    if(state.minigame.active && state.minigame.type === 'cat_match3') {
+        const startX = 175, startY = 55, cellSize = 45;
+        const col = Math.floor((mouseX - startX) / cellSize);
+        const row = Math.floor((mouseY - startY) / cellSize);
+
+        if(col >= 0 && col < 4 && row >= 0 && row < 4) {
+            const clickedIdx = row * 4 + col;
+            const mg = state.minigame;
+
+            if(mg.data.selectedIdx === null) {
+                mg.data.selectedIdx = clickedIdx;
+            } else {
+                const prev = mg.data.selectedIdx;
+                const r1 = Math.floor(prev / 4), c1 = prev % 4;
+                const r2 = Math.floor(clickedIdx / 4), c2 = clickedIdx % 4;
+                
+                if(Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
+                    const tmp = mg.data.grid[prev];
+                    mg.data.grid[prev] = mg.data.grid[clickedIdx];
+                    mg.data.grid[clickedIdx] = tmp;
+
+                    mg.score += 10;
+                    log(`Matched colored yarn! Gained +10 points!`);
+                    
+                    if(mg.score >= mg.target) {
+                        state.hearts += 10; state.coins += 12;
+                        log(`Success! You hit 50 points! ${state.name} rolling around in yarn layers. (+10 Hearts, +12 Coins)`);
+                        updateUIValues(); closeAllPanels();
+                    }
+                }
+                mg.data.selectedIdx = null;
+            }
         }
     }
-}
+});
 
 function handleMinigameClick() {
     if(!state.minigame.active) return;
@@ -598,27 +670,14 @@ function handleMinigameClick() {
         const p = state.minigame.data.pos;
         if(p >= state.minigame.data.targetMin && p <= state.minigame.data.targetMax) {
             state.hearts += 8; state.coins += 10;
-            log(`Perfect timing! ${state.name} sprinted out and caught the ball clean out of mid-air! (+8 Hearts, +10 Coins)`);
+            log(`Perfect throw! 🎾 ${state.name} caught the ball clean out of mid-air! (+8 Hearts, +10 Coins)`);
         } else {
             state.hearts += 2;
-            log(`You overthrew. ${state.name} sniffed around but finally tracked down the ball anyway.`);
+            log(`You overthrew. ${state.name} tracked it down in the grass anyway.`);
         }
-        updateUIValues();
-        closeAllPanels();
+        updateUIValues(); closeAllPanels();
     } else if(state.minigame.type === 'cat_match3') {
-        // Match 3 simulated turn logic
-        let earned = 10 + Math.floor(Math.random() * 15);
-        state.minigame.score += earned;
-        log(`You swiped yarn clusters together! Gained +${earned} points!`);
-        if(state.minigame.score >= state.minigame.target) {
-            state.hearts += 10; state.coins += 12;
-            log(`Hooray! You hit 50 points! ${state.name} purrs loudly rolling around in soft yarn. (+10 Hearts, +12 Coins)`);
-            updateUIValues();
-            closeAllPanels();
-        } else {
-            // Shuffle colors for animation visual effects
-            initCatMatch3();
-        }
+        closeAllPanels();
     }
 }
 
@@ -629,132 +688,104 @@ function initCatMatch3() {
         state.minigame.data.grid.push(colors[Math.floor(Math.random()*colors.length)]);
     }
 }
+
 // --- RENDER ENGINE ---
 function renderLoop() {
-    // Background scenery selection
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     if(state.isWalking) {
-        ctx.fillStyle = '#bce3b5'; // Forest Ground Clearings
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = '#6fa867'; // Woodland Backdrops
-        ctx.fillRect(0,0,canvas.width,120);
-        // Draw trees
+        ctx.fillStyle = '#bce3b5'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#6fa867'; ctx.fillRect(0,0,canvas.width,120);
         ctx.fillStyle = '#614834';
         for(let i=30; i<550; i+=140) ctx.fillRect(i, 60, 20, 60);
         ctx.fillStyle = '#3a6634';
         for(let i=10; i<550; i+=140) { ctx.beginPath(); ctx.arc(40+i, 50, 45, 0, Math.PI*2); ctx.fill(); }
     } else {
-        ctx.fillStyle = '#fdf3e7'; // Cozy Cottage Flooring
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = '#eedcc5'; // Cottage Paneling Trim
-        ctx.fillRect(0,220,canvas.width,100);
-        ctx.strokeStyle = '#dfc3a7';
-        ctx.lineWidth = 2;
+        ctx.fillStyle = '#fdf3e7'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#eedcc5'; ctx.fillRect(0,220,canvas.width,100);
+        ctx.strokeStyle = '#dfc3a7'; ctx.lineWidth = 2;
         for(let i=0; i<=canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,220); ctx.lineTo(i,canvas.height); ctx.stroke(); }
     }
 
-    // Specimen-Specific Environment Custom Enclosures
     if(state.type === 'fish') {
-        ctx.fillStyle = '#a2d2ff'; // Water Reservoir Boundaries
-        ctx.fillRect(100, 80, 350, 180);
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
-        ctx.strokeRect(100, 80, 350, 180);
+        ctx.fillStyle = '#a2d2ff'; ctx.fillRect(100, 80, 350, 180);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.strokeRect(100, 80, 350, 180);
     } else if(state.type === 'lizard') {
-        ctx.fillStyle = '#eadeca'; // Terrarium Sandy Soil Bedding
-        ctx.fillRect(100, 80, 350, 180);
-        ctx.strokeStyle = '#7f675b'; ctx.lineWidth = 4;
-        ctx.strokeRect(100, 80, 350, 180);
+        ctx.fillStyle = '#eadeca'; ctx.fillRect(100, 80, 350, 180);
+        ctx.strokeStyle = '#7f675b'; ctx.lineWidth = 4; ctx.strokeRect(100, 80, 350, 180);
     }
 
-    // Render Habitat Interior Furniture Accessories
     if((state.type==='fish' || state.type==='lizard') && DECOR_ITEMS[state.type]) {
         DECOR_ITEMS[state.type].forEach((item, idx) => {
             if(!item.active) return;
-            ctx.fillStyle = '#8e9aaf';
-            if(item.n.includes('Coral')) ctx.fillStyle = '#ff7096';
-            if(item.n.includes('Castle')) ctx.fillStyle = '#b388ff';
-            if(item.n.includes('Ivy')) ctx.fillStyle = '#52b788';
-            if(item.n.includes('Log') || item.n.includes('Driftwood')) ctx.fillStyle = '#7a5435';
+            ctx.fillStyle = item.n.includes('Coral') ? '#ff7096' : item.n.includes('Castle') ? '#b388ff' : item.n.includes('Ivy') ? '#52b788' : '#7a5435';
             ctx.fillRect(130 + (idx*90), 200, 60, 50);
         });
     }
 
-    // Render Forest Mess Spots
     if(state.isWalking) {
         state.poops.forEach(p => {
-            ctx.fillStyle = '#7a583a';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff'; font="10px Arial"; ctx.fillText("🗑️", p.x-7, p.y+4);
+            ctx.fillStyle = '#7a583a'; ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font="10px Arial"; ctx.fillText("🗑️", p.x-7, p.y+4);
         });
+        ctx.fillStyle = '#a3846b'; ctx.fillRect(430, 180, 45, 35);
+        ctx.fillRect(460, 165, 20, 20); ctx.fillStyle = '#111'; ctx.fillRect(472, 170, 4, 4);
+        ctx.fillStyle = '#dfaf8f'; ctx.fillRect(445, 175, 10, 8);
     }
 
-    // Render NPC Doggy Friend in Forest
-    if(state.isWalking) {
-        ctx.fillStyle = '#a3846b'; // NPC Golden-Brown Mutt
-        ctx.fillRect(430, 180, 45, 35);
-        ctx.fillRect(460, 165, 20, 20);
-        ctx.fillStyle = '#111'; ctx.fillRect(472, 170, 4, 4); // Eye
-        ctx.fillStyle = '#dfaf8f'; ctx.fillRect(445, 175, 10, 8); // Happy wagging tail indicators
-        ctx.fillStyle = '#3a6634';
-    }
-
-    // Draw Main Animal Sprite Creature
     const pal = PALETTES[state.breed] || {c1:'#fff', c2:'#888', e:'#000'};
     let cx = 250, cy = 180;
     if(state.type === 'fish' || state.type === 'lizard') { cx = 240; cy = 150; }
 
     if(state.isSleeping) {
-        // Drawn asleep bundle
         ctx.fillStyle = '#c1d3fe'; ctx.beginPath(); ctx.arc(cx+20, cy+25, 35, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = pal.c1; ctx.beginPath(); ctx.arc(cx+10, cy+15, 20, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#333'; ctx.fillText("Zzz..", cx+5, cy-15);
+        ctx.fillStyle = '#333'; ctx.font="12px Arial"; ctx.fillText("Zzz..", cx+5, cy-15);
     } else {
-        // Alive active standard render passes
         ctx.fillStyle = pal.c1;
         if(state.type === 'dog') {
-            ctx.fillRect(cx, cy, 65, 45); // Body
-            ctx.fillStyle = pal.c2; ctx.fillRect(cx+45, cy-20, 30, 30); // Head
-            ctx.fillStyle = pal.e; ctx.fillRect(cx+65, cy-15, 5, 5); // Eye
-            ctx.fillStyle = '#000'; ctx.fillRect(cx+73, cy-10, 4, 4); // Nose
+            ctx.fillRect(cx, cy, 65, 45);
+            ctx.fillStyle = pal.c2; ctx.fillRect(cx+45, cy-20, 30, 30);
+            ctx.fillStyle = pal.e; ctx.fillRect(cx+65, cy-15, 5, 5);
+            ctx.fillStyle = '#000'; ctx.fillRect(cx+73, cy-10, 4, 4);
         } else if(state.type === 'cat') {
-            ctx.fillRect(cx, cy, 55, 40); // Body
-            ctx.fillStyle = pal.c2; ctx.fillRect(cx+35, cy-20, 28, 28); // Head
-            ctx.fillStyle = pal.c1; ctx.fillRect(cx+38, cy-30, 8, 10); ctx.fillRect(cx+51, cy-30, 8, 10); // Pointy Ears
-            ctx.fillStyle = pal.e; ctx.fillRect(cx+53, cy-15, 4, 4); // Eye
+            ctx.fillRect(cx, cy, 55, 40);
+            ctx.fillStyle = pal.c2; ctx.fillRect(cx+35, cy-20, 28, 28);
+            ctx.fillStyle = pal.c1; ctx.fillRect(cx+38, cy-30, 8, 10); ctx.fillRect(cx+51, cy-30, 8, 10);
+            ctx.fillStyle = pal.e; ctx.fillRect(cx+53, cy-15, 4, 4);
         } else if(state.type === 'fish') {
-            ctx.beginPath(); ctx.ellipse(cx+20, cy+10, 30, 18, 0, 0, Math.PI*2); ctx.fill(); // Torso
-            ctx.fillStyle = pal.c2; ctx.beginPath(); ctx.moveTo(cx, cy+10); ctx.lineTo(cx-15, cy-5); ctx.lineTo(cx-15, cy+25); ctx.fill(); // Fin
-            ctx.fillStyle = '#000'; ctx.fillRect(cx+38, cy+5, 4, 4); // Eye
+            ctx.beginPath(); ctx.ellipse(cx+20, cy+10, 30, 18, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = pal.c2; ctx.beginPath(); ctx.moveTo(cx, cy+10); ctx.lineTo(cx-15, cy-5); ctx.lineTo(cx-15, cy+25); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(cx+38, cy+5, 4, 4);
         } else if(state.type === 'lizard') {
-            ctx.fillRect(cx, cy+10, 60, 20); // Body
-            ctx.fillStyle = pal.c2; ctx.fillRect(cx+50, cy, 22, 18); // Head
-            ctx.fillStyle = pal.c1; ctx.fillRect(cx-20, cy+15, 20, 6); // Tail segment
-            ctx.fillStyle = pal.e; ctx.fillRect(cx+62, cy+4, 4, 4); // Eye
+            ctx.fillRect(cx, cy+10, 60, 20);
+            ctx.fillStyle = pal.c2; ctx.fillRect(cx+50, cy, 22, 18);
+            ctx.fillStyle = pal.c1; ctx.fillRect(cx-20, cy+15, 20, 6);
+            ctx.fillStyle = pal.e; ctx.fillRect(cx+62, cy+4, 4, 4);
         }
     }
 
-    // Render Dynamic Active Minigame Frames
     if(state.minigame.active) {
         if(state.minigame.type === 'dog_fetch') {
-            // Render Slider Track Bounds Container
             ctx.fillStyle = '#ccc'; ctx.fillRect(150, 20, 250, 25);
-            ctx.fillStyle = '#6ebd71'; ctx.fillRect(150 + state.minigame.data.targetMin - 150, 20, state.minigame.data.targetMax - state.minigame.data.targetMin, 25); // Target hot-spotzone
+            ctx.fillStyle = '#6ebd71'; ctx.fillRect(240, 20, 70, 25);
             
-            // Increment ticker position updates
             state.minigame.data.pos += state.minigame.data.dir;
             if(state.minigame.data.pos > 390 || state.minigame.data.pos < 150) state.minigame.data.dir *= -1;
             
-            // Draw selector pinhead pointer indicator
             ctx.fillStyle = '#d94141'; ctx.fillRect(state.minigame.data.pos, 15, 6, 35);
         } else if(state.minigame.type === 'cat_match3') {
-            // Draw the structural simulated mini grid setup overlay
-            ctx.fillStyle = 'rgba(255,254,249,0.92)'; ctx.fillRect(160, 15, 230, 220);
-            ctx.fillStyle = '#5c4a3c'; ctx.font = "bold 11px Courier"; ctx.fillText(`Match Yarn! Points: ${state.minigame.score}/50`, 175, 35);
+            ctx.fillStyle = 'rgba(255,254,249,0.96)'; ctx.fillRect(160, 15, 230, 220);
+            ctx.fillStyle = '#5c4a3c'; ctx.font = "bold 11px Courier New"; ctx.fillText(`Match Yarn! Points: ${state.minigame.score}/50`, 175, 35);
             if(state.minigame.data.grid) {
                 state.minigame.data.grid.forEach((col, idx) => {
-                    let gx = 180 + (idx % 4) * 45;
+                    let gx = 175 + (idx % 4) * 45;
                     let gy = 55 + Math.floor(idx / 4) * 42;
-                    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(gx+15, gy+15, 16, 0, Math.PI*2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(gx+22, gy+20, 16, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                    if(state.minigame.data.selectedIdx === idx) {
+                        ctx.strokeStyle = '#d94141'; ctx.lineWidth = 3; ctx.stroke();
+                    }
                 });
             }
         }

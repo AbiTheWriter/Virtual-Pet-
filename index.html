@@ -254,6 +254,7 @@
 
         <div class="flex-center" style="margin-top: 10px;">
             <button class="btn" style="background:#b39274" onclick="speakToPet('love')">🗣️ "I love you!"</button>
+            <button class="btn" style="background:#b39274" onclick="speakToPet('night')">🗣 "Good night!"</button>
             <button class="btn" style="background:#b39274" onclick="speakToPet('job')">🗣️ "Good job!"</button>
         </div>
 
@@ -293,8 +294,8 @@ const state = {
 };
 
 const BREEDS = {
-    dog: ['Rottweiler', 'Golden Retriever', 'Pomeranian', 'Bulldog', 'Corgi'],
-    cat: ['Siamese', 'Black', 'Persian', 'Sphynx', 'Russian Blue'],
+    dog: ['Rottweiler', 'German Shepard', 'Golden Retriever', 'Pomeranian', 'Bulldog', 'Corgi'],
+    cat: ['Siamese', 'Black', 'Persian', 'Sphynx', 'Ragdoll', 'Russian Blue'],
     fish: ['Guppy', 'Betta', 'Goldfish'],
     lizard: ['Chameleon', 'Gecko', 'Bearded Dragon']
 };
@@ -315,12 +316,14 @@ const PALETTES = {
     'Rottweiler': {c1:'#292929', c2:'#c27d38', e:'#ffffff'},
     'Golden Retriever': {c1:'#f2cb80', c2:'#e0b358', e:'#3d2a13'},
     'Pomeranian': {c1:'#e89a4e', c2:'#f5be87', e:'#26180a'},
-    'Bulldog': {c1:'#ded5ca', c2:'#a69b8f', e:'#1f1d1a'},
+    'Bulldog': {c1:'#FFFDD0', c2:'#4A4D52', e:'#A88D79'},
+    'German Shepard': {c1:'#C48A4E', c2:'#1C1C1C', e:'#E3C598'
     'Corgi': {c1:'#d47d37', c2:'#ffffff', e:'#3b220e'},
     'Siamese': {c1:'#e6dec3', c2:'#4a3b32', e:'#6b96b3'},
     'Black': {c1:'#2b2b2b', c2:'#1f1f1f', e:'#b8c431'},
     'Persian': {c1:'#f7f7f7', c2:'#e3e3e3', e:'#bf8f30'},
     'Sphynx': {c1:'#f5c4b5', c2:'#e0aba4', e:'#4a8b94'},
+    'Ragdoll": {c1:'#E5D3B3', c2:'#4A4D52', c:'#7B5C43'},
     'Russian Blue': {c1:'#798794', c2:'#616d78', e:'#4fa14f'},
     'Guppy': {c1:'#f7797d', c2:'#fbd786', e:'#ffffff'},
     'Betta': {c1:'#457b9d', c2:'#e63946', e:'#ffffff'},

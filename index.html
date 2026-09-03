@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Virtual Pet Sanctuary</title>
+    <title>Cottagecore Virtual Pet Sanctuary</title>
     <style>
         :root {
             --bg-color: #f4eae1;
@@ -262,6 +262,7 @@
             <button class="btn" id="btn-sponge" style="background:#5c8a97;" onclick="activateSpongeTool()">🧼 Sponge Tool</button>
             <button class="btn" style="background:#a67c52;" onclick="triggerPhotoDownload()">📸 Photo Album</button>
             <button class="btn hidden" id="btn-forage" style="background:#bc8a5f;" onclick="claimWildForage()">🧺 Daily Forage</button>
+            <button class="btn" style="background:#d98880;" onclick="resetAllGameProgress()">🗑️ Abandon Pet</button>
         </div>
 
         <div class="flex-center" style="margin-top: 5px;">
@@ -309,7 +310,6 @@ const state = {
     poops: [], activePanel: null,
     minigame: { type: '', active: false, score: 0, target: 0, data: {} },
     tutorialStep: 0,
-    // Upgraded Features Config parameters mapping variables
     weather: 'sunny',
     wallpaper: 'plain',
     spongeActive: false,
@@ -482,10 +482,29 @@ function showTutorialStep() {
     }
 }
 
-function log(msg) {
-    const box = document.getElementById('game-log');
-    box.innerText = msg;
-    box.scrollTop = box.scrollHeight;
+// --- HARD PROGRESS RESET METHOD ---
+function resetAllGameProgress() {
+    if(confirm("Are you sure you want to abandon your current pet? You will lose all coins, hearts, and bought items to choose a completely new animal!")) {
+        localStorage.removeItem('cozy_pet_savefile');
+        
+        // Reset state variables completely
+        state.type = ''; state.name = ''; state.gender = ''; state.breed = '';
+        state.hearts = 0; state.coins = 30; state.weather = 'sunny'; state.wallpaper = 'plain';
+        state.poops = []; state.dirtLayer = 0; state.lastForageTime = 0;
+        closeAllPanels();
+        
+        // Reset decor item tables
+        Object.keys(DECOR_ITEMS).forEach(k => {
+            DECOR_ITEMS[k].forEach(item => { item.owned = false; item.active = false; });
+        });
+        
+        // Return back to welcome screen drawer layout panel context
+        document.getElementById('screen-main').classList.add('hidden');
+        document.getElementById('screen-welcome').classList.remove('hidden');
+        document.getElementById('pet-name').value = '';
+        
+        log("Progress cleared completely! Pick a brand new friend to start fresh.");
+    }
 }
 function openInteraction(panelType) {
     if(state.isSleeping) { log("Shh... your buddy is asleep right now."); return; }
@@ -525,21 +544,10 @@ function openInteraction(panelType) {
     }
 }
 
-function closeAllPanels() {
-    state.activePanel = null;
-    document.getElementById('panel-feed').classList.add('hidden');
-    document.getElementById('panel-decor').classList.add('hidden');
-    document.getElementById('panel-minigame').classList.add('hidden');
-    state.minigame.active = false;
-    const oldGrid = document.getElementById('lizard-subgrid');
-    if(oldGrid) oldGrid.remove();
-}
-
 function updateUIValues() {
     document.getElementById('val-hearts').innerText = state.hearts;
     document.getElementById('val-coins').innerText = state.coins;
     
-    // Evaluate daily forage timer display state logic metrics
     const now = Date.now();
     const btnForage = document.getElementById('btn-forage');
     if(state.name && now - state.lastForageTime > 3600000) {
@@ -645,7 +653,6 @@ function cleanMess(index) {
     updateUIValues(); saveGameProgress();
 }
 
-// --- UPGRADED SPA CARE SPONGE METHOD LOGIC ---
 function activateSpongeTool() {
     if(state.isSleeping) { log("Don't scrub your buddy while they rest!"); return; }
     state.spongeActive = !state.spongeActive;
@@ -748,10 +755,8 @@ function buyDecor(index) {
     if(state.coins < item.c) { log("Not enough coins for this decoration."); return; }
     state.coins -= item.c; item.owned = true; item.active = true;
     
-    // Evaluate if this specific structural element represents a full wallpaper swap
     if(item.n.includes('Panel') || item.n.includes('Brick') || item.n.includes('Floral')) {
         state.wallpaper = item.n;
-        // Enforce exclusive toggle filters rules on alternate wallpaper nodes
         DECOR_ITEMS[state.type].forEach((other, oi) => { if(oi !== index && (other.n.includes('Panel') || other.n.includes('Brick') || other.n.includes('Floral'))) other.active = false; });
     }
     
@@ -773,7 +778,8 @@ function toggleDecor(index) {
     log(`${item.active ? 'Placed' : 'Stored'} ${item.n}.`);
     buildDecorUI(); saveGameProgress();
 }
-// --- CANVAS EVENT LISTENERS INTERACTIVE MECHANICS ---
+
+// --- CANVAS INTERACTION LISTENERS MAPS ---
 canvas.addEventListener('mousemove', function(e) {
     if(!state.spongeActive || state.dirtLayer <= 0) return;
     const rect = canvas.getBoundingClientRect();
@@ -783,7 +789,6 @@ canvas.addEventListener('mousemove', function(e) {
     let cx = 250, cy = 180;
     if(state.type === 'fish' || state.type === 'lizard') { cx = 240; cy = 150; }
     
-    // Clean dirt layer when mouse vectors cross pet center zone limits
     if(Math.hypot(mouseX - cx, mouseY - cy) < 60) {
         state.dirtLayer -= 0.4;
         if(state.dirtLayer <= 0) {
@@ -922,14 +927,12 @@ function initLizardMemoryGame() {
 function renderLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Weather Backdrop Calculations
     if(state.isWalking) {
         ctx.fillStyle = '#bce3b5'; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.fillStyle = '#6fa867'; ctx.fillRect(0,0,canvas.width,120);
         ctx.fillStyle = '#614834'; for(let i=30; i<550; i+=140) ctx.fillRect(i, 60, 20, 60);
         ctx.fillStyle = '#3a6634'; for(let i=10; i<550; i+=140) { ctx.beginPath(); ctx.arc(40+i, 50, 45, 0, Math.PI*2); ctx.fill(); }
     } else {
-        // Evaluate dynamic customized wallpaper theme selectors mapping conditions
         if(state.wallpaper.includes('Panel')) ctx.fillStyle = '#d4a373';
         else if(state.wallpaper.includes('Brick')) ctx.fillStyle = '#b5654d';
         else if(state.wallpaper.includes('Floral')) ctx.fillStyle = '#e9edc9';
@@ -941,7 +944,6 @@ function renderLoop() {
         for(let i=0; i<=canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,220); ctx.lineTo(i,canvas.height); ctx.stroke(); }
     }
 
-    // Dynamic Weather Particle Layer System Render Overlays
     if(!state.isWalking && !state.minigame.active) {
         if(state.weather === 'rainy') {
             ctx.strokeStyle = 'rgba(174,214,241,0.6)'; ctx.lineWidth = 2;
@@ -1017,7 +1019,6 @@ function renderLoop() {
             ctx.fillStyle = pal.e; ctx.fillRect(cx+62, cy+4, 4, 4);
         }
         
-        // Draw leaf layer dirt texture if pet accumulated dirt patterns rules
         if(state.dirtLayer > 0) {
             ctx.fillStyle = '#7d8f76';
             for(let i=0; i<Math.floor(state.dirtLayer); i++) {
@@ -1086,7 +1087,6 @@ setInterval(() => {
     updateUIValues();
 }, 1000);
 
-// Initialize boot conditions evaluations checks variables
 window.onload = () => {
     loadGameProgress();
 };

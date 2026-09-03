@@ -147,6 +147,10 @@
             margin-bottom: 6px;
             border: 1px solid #ebdcd0;
         }
+        .badge-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; text-align: center; }
+        .badge-icon { font-size: 20px; filter: grayscale(100%); opacity: 0.4; transition: all 0.3s; }
+        .badge-icon.unlocked { filter: grayscale(0%); opacity: 1; transform: scale(1.1); }
+        .badge-label { font-size: 8px; font-weight: bold; display: block; margin-top: 2px; }
         .log-box {
             background: #f1ede6;
             border-radius: 8px;
@@ -192,7 +196,7 @@
 </head>
 <body>
 <div id="game-container">
-    <!-- TUTORIAL STEP OVERLAY MASK -->
+    <!-- TUTORIAL STEP OVERLAY -->
     <div id="tutorial-screen" class="tutorial-overlay hidden">
         <div class="tutorial-bubble">
             <p id="tutorial-text" style="color:var(--text-color); font-weight:bold; margin-bottom:12px;"></p>
@@ -215,7 +219,7 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: METADATA ADOPTION DRAWER -->
+    <!-- SCREEN 2: CUSTOMIZATION DRAWER -->
     <div id="screen-custom" class="screen hidden">
         <h2 id="custom-title">Adopt your Friend</h2>
         <label for="pet-name">Give them a beautiful name:</label>
@@ -257,7 +261,7 @@
             <button class="btn" id="btn-decor" onclick="openInteraction('decor')">🎨 Decorate</button>
         </div>
 
-        <!-- Upgraded Care & Studio Utilities Bar -->
+        <!-- Utility features tray -->
         <div class="flex-center" style="margin-top: 8px; border: 1px dashed var(--border-color); padding: 5px; border-radius: 10px;">
             <button class="btn" id="btn-sponge" style="background:#5c8a97;" onclick="activateSpongeTool()">🧼 Sponge Tool</button>
             <button class="btn" style="background:#a67c52;" onclick="triggerPhotoDownload()">📸 Photo Album</button>
@@ -270,6 +274,18 @@
             <button class="btn" style="background:#b39274" onclick="speakToPet('night')">🗣️ "Good night!"</button>
             <button class="btn" style="background:#b39274" onclick="speakToPet('job')">🗣️ "Good job!"</button>
         </div>
+        <!-- New Achievement Badges Shelf Display Drawer -->
+        <div style="margin-top: 12px; padding: 10px; background: #fffdfa; border: 1px solid var(--border-color); border-radius: 12px;">
+            <h4 style="font-size:11px; text-align:center; color:#6e8469;">🌸 Sanctuary Achievements Shelf 🏆</h4>
+            <div class="badge-grid">
+                <div><span class="badge-icon" id="badge-forage">🧺</span><span class="badge-label">Forager</span></div>
+                <div><span class="badge-icon" id="badge-hearts">❤️</span><span class="badge-label">Companion</span></div>
+                <div><span class="badge-icon" id="badge-clean">🧼</span><span class="badge-label">Neat Freak</span></div>
+                <div><span class="badge-icon" id="badge-rich">🪙</span><span class="badge-label">Millionaire</span></div>
+                <div><span class="badge-icon" id="badge-gamer">🎮</span><span class="badge-label">Gamer</span></div>
+            </div>
+        </div>
+
         <!-- Sub Panels for Activities -->
         <div id="panel-feed" class="sub-panel hidden">
             <h3>Village Market & Weather Machine</h3>
@@ -314,7 +330,12 @@ const state = {
     wallpaper: 'plain',
     spongeActive: false,
     dirtLayer: 0,
-    lastForageTime: 0
+    lastForageTime: 0,
+    // Achievement counters maps setup
+    statForaged: 0, statCleaned: 0, statGamesPlayed: 0,
+    unlockedBadges: [],
+    // Dream bubbles collection parameters tracking configuration
+    dreamBubbles: []
 };
 
 const BREEDS = {
@@ -431,7 +452,7 @@ function skipTutorial() {
     
     state.tutorialStep = 0;
     document.getElementById('tutorial-screen').classList.add('hidden');
-    log("Walkthrough dismissed! Tap 'Sponge Tool' or 'Photo Album' to check the new upgrades!");
+    log("Walkthrough dismissed! Check the Achievements shelf below the canvas!");
     saveGameProgress();
 }
 
@@ -460,50 +481,50 @@ function showTutorialStep() {
             textEl.innerText = "This is the play button to launch customized minigames!";
             document.getElementById('btn-play').classList.add('highlight-element');
         } else {
-            textEl.innerText = "This is the decorate button! Place backgrounds and items into your custom companion container.";
+            textEl.innerText = "This is the decorate button! Place structural wallpaper modifications here.";
             document.getElementById('btn-decor').classList.add('highlight-element');
         }
     } else if(state.tutorialStep === 2) {
-        textEl.innerText = "This is the market button. Buy snacks or toggle room weather conditions here!";
+        textEl.innerText = "This is the market button. Buy snacks or adjust ambient weather conditions!";
         document.getElementById('btn-feed').classList.add('highlight-element');
     } else if(state.tutorialStep === 3) {
-        textEl.innerText = "This is the pet button! Display affection to gain extra gold currency.";
+        textEl.innerText = "This is the pet button! Stroke your animal friend to acquire gold coins.";
         document.getElementById('btn-pet').classList.add('highlight-element');
     } else if(state.tutorialStep === 4) {
         if(state.type === 'dog' || state.type === 'cat') {
-            textEl.innerText = "This is the Forest walk button to forage out in the woodlands!";
+            textEl.innerText = "This is the Forest walk button to discover hidden leaf clutter packages.";
             document.getElementById('btn-walk').classList.add('highlight-element');
         } else {
             advanceTutorial(); 
         }
     } else if(state.tutorialStep === 5) {
-        textEl.innerText = "This is the sleep button! Put your pet to rest to replenish their energetic metrics.";
+        textEl.innerText = "This is the sleep button! Rest your buddy to trigger custom interactive Dream Bubbles!";
         document.getElementById('btn-sleep').classList.add('highlight-element');
     }
 }
 
-// --- HARD PROGRESS RESET METHOD ---
 function resetAllGameProgress() {
-    if(confirm("Are you sure you want to abandon your current pet? You will lose all coins, hearts, and bought items to choose a completely new animal!")) {
+    if(confirm("Are you sure you want to abandon your current pet? You will lose all coins, hearts, decorations, and earned badges to choose a completely new animal!")) {
         localStorage.removeItem('cozy_pet_savefile');
         
-        // Reset state variables completely
         state.type = ''; state.name = ''; state.gender = ''; state.breed = '';
         state.hearts = 0; state.coins = 30; state.weather = 'sunny'; state.wallpaper = 'plain';
         state.poops = []; state.dirtLayer = 0; state.lastForageTime = 0;
+        state.statForaged = 0; state.statCleaned = 0; state.statGamesPlayed = 0;
+        state.unlockedBadges = []; state.dreamBubbles = [];
         closeAllPanels();
         
-        // Reset decor item tables
         Object.keys(DECOR_ITEMS).forEach(k => {
             DECOR_ITEMS[k].forEach(item => { item.owned = false; item.active = false; });
         });
         
-        // Return back to welcome screen drawer layout panel context
         document.getElementById('screen-main').classList.add('hidden');
         document.getElementById('screen-welcome').classList.remove('hidden');
         document.getElementById('pet-name').value = '';
         
-        log("Progress cleared completely! Pick a brand new friend to start fresh.");
+        // Refresh badges display grayscale opacity limits
+        document.querySelectorAll('.badge-icon').forEach(b => b.classList.remove('unlocked'));
+        log("Sanctuary logs wiped safely! Ready to adopt a brand new friend.");
     }
 }
 function openInteraction(panelType) {
@@ -555,16 +576,38 @@ function updateUIValues() {
     } else {
         btnForage.classList.add('hidden');
     }
+    
+    checkBadgeUnlocks();
 }
 
-// --- PERSISTENT STORAGE AUTO-SAVE FRAMEWORK ---
+// --- BADGE SYSTEM ENGINE UNLOCK VERIFICATION TRACKING ---
+function checkBadgeUnlocks() {
+    if(!state.name) return;
+    const checkUnlock = (badgeId, condition, msg) => {
+        if(!state.unlockedBadges.includes(badgeId) && condition) {
+            state.unlockedBadges.push(badgeId);
+            state.coins += 50; // Give milestone bonus money
+            document.getElementById(`badge-${badgeId}`).classList.add('unlocked');
+            log(`🏆 ACQUIRED BADGE: [${msg}]! Claimed +50 Gold coins bonus!`);
+            saveGameProgress();
+        }
+    };
+    
+    checkUnlock('forage', state.statForaged >= 3, "Master Forager (Forage 3 times)");
+    checkUnlock('hearts', state.hearts >= 60, "Best Companion (Hit 60 Hearts)");
+    checkUnlock('clean', state.statCleaned >= 3, "Neat Freak (Sponge away dirt 3 times)");
+    checkUnlock('rich', state.coins >= 150, "Millionaire Wallet (Save up 150 Coins)");
+    checkUnlock('gamer', state.statGamesPlayed >= 3, "Arcade Enthusiast (Play 3 minigames)");
+}
+
 function saveGameProgress() {
     if(!state.name) return;
     const packed = {
         type: state.type, name: state.name, gender: state.gender, breed: state.breed,
         hearts: state.hearts, coins: state.coins, weather: state.weather,
         wallpaper: state.wallpaper, lastForageTime: state.lastForageTime,
-        decors: DECOR_ITEMS[state.type]
+        statForaged: state.statForaged, statCleaned: state.statCleaned, statGamesPlayed: state.statGamesPlayed,
+        unlockedBadges: state.unlockedBadges, decors: DECOR_ITEMS[state.type]
     };
     localStorage.setItem('cozy_pet_savefile', JSON.stringify(packed));
 }
@@ -577,10 +620,10 @@ function loadGameProgress() {
         state.type = parsed.type; state.name = parsed.name; state.gender = parsed.gender; state.breed = parsed.breed;
         state.hearts = parsed.hearts; state.coins = parsed.coins; state.weather = parsed.weather || 'sunny';
         state.wallpaper = parsed.wallpaper || 'plain'; state.lastForageTime = parsed.lastForageTime || 0;
+        state.statForaged = parsed.statForaged || 0; state.statCleaned = parsed.statCleaned || 0; state.statGamesPlayed = parsed.statGamesPlayed || 0;
+        state.unlockedBadges = parsed.unlockedBadges || [];
         
-        if(parsed.decors && DECOR_ITEMS[state.type]) {
-            DECOR_ITEMS[state.type] = parsed.decors;
-        }
+        if(parsed.decors && DECOR_ITEMS[state.type]) DECOR_ITEMS[state.type] = parsed.decors;
         
         document.getElementById('screen-welcome').classList.add('hidden');
         document.getElementById('screen-main').classList.remove('hidden');
@@ -588,11 +631,17 @@ function loadGameProgress() {
         document.getElementById('display-pet-details').innerText = `${state.gender === 'girl' ? '🎀' : '🧢'} ${state.breed}`;
         document.getElementById('weather-selector').value = state.weather;
         
+        // Light up unlocked elements structures
+        state.unlockedBadges.forEach(badgeId => {
+            const el = document.getElementById(`badge-${badgeId}`);
+            if(el) el.classList.add('unlocked');
+        });
+        
         log(`Welcome back! ${state.name} was waiting for you happily.`);
         buildMarketUI(); buildDecorUI(); updateUIValues();
         requestAnimationFrame(renderLoop);
     } catch(err) {
-        console.error("Failed loading auto-save registry logs file.", err);
+        console.error("Auto-save load failed.", err);
     }
 }
 function petAnimal() {
@@ -618,12 +667,14 @@ function toggleSleep() {
     state.isSleeping = !state.isSleeping;
     closeAllPanels();
     if(state.isSleeping) {
-        log(`${state.name} curls up snuggly into their blanket...`);
+        log(`${state.name} curled up and fell fast asleep. Catch their Dream Bubbles inside the canvas! 💭`);
         document.getElementById('thought-bubble').style.display = 'none';
         document.getElementById('btn-sleep').innerText = '☀️ Wake Up';
+        state.dreamBubbles = []; // Flush old frames out
     } else {
         log(`${state.name} stretches out and wakes up refreshed!`);
         document.getElementById('btn-sleep').innerText = '💤 Sleep';
+        state.dreamBubbles = [];
         triggerNewThought();
     }
     saveGameProgress();
@@ -685,6 +736,8 @@ function claimWildForage() {
     if(now - state.lastForageTime < 3600000) { log("The forage basket fills up slowly! Check back in an hour."); return; }
     
     state.lastForageTime = now;
+    state.statForaged += 1;
+    
     const rewards = [
         { n: "🍄 Rare Chanterelle Cluster", g: 25 },
         { n: "💐 Wild Lavender sprigs", g: 15 },
@@ -779,7 +832,7 @@ function toggleDecor(index) {
     buildDecorUI(); saveGameProgress();
 }
 
-// --- CANVAS INTERACTION LISTENERS MAPS ---
+// --- CANVAS MULTI-MODE MOUSE INTERCEPT LISTENERS ---
 canvas.addEventListener('mousemove', function(e) {
     if(!state.spongeActive || state.dirtLayer <= 0) return;
     const rect = canvas.getBoundingClientRect();
@@ -792,7 +845,7 @@ canvas.addEventListener('mousemove', function(e) {
     if(Math.hypot(mouseX - cx, mouseY - cy) < 60) {
         state.dirtLayer -= 0.4;
         if(state.dirtLayer <= 0) {
-            state.dirtLayer = 0; state.hearts += 10; state.coins += 5;
+            state.dirtLayer = 0; state.statCleaned += 1; state.hearts += 10; state.coins += 5;
             log(`Sparkling clean! You scrubbed all leaf clutter off ${state.name}! (+10 Hearts, +5 Gold)`);
             state.spongeActive = false;
             document.getElementById('btn-sponge').style.background = '#5c8a97';
@@ -801,11 +854,25 @@ canvas.addEventListener('mousemove', function(e) {
     }
 });
 
-canvas.addEventListener('click', function(e) {
+canvas.addEventListener('mousedown', function(e) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
     
+    // Process sleeping mode interactive Dream Bubble click hits checks
+    if(state.isSleeping && state.dreamBubbles.length > 0) {
+        for(let i = state.dreamBubbles.length - 1; i >= 0; i--) {
+            let b = state.dreamBubbles[i];
+            if(Math.hypot(mouseX - b.x, mouseY - b.y) < b.r + 15) {
+                state.dreamBubbles.splice(i, 1);
+                state.hearts += 3;
+                log(`Popped a Dream Bubble! 💕 Given ${state.name} happy thoughts! (+3 Hearts)`);
+                updateUIValues(); saveGameProgress();
+                return;
+            }
+        }
+    }
+
     if(state.isWalking && state.poops.length > 0) {
         state.poops.forEach((p, idx) => {
             if(Math.hypot(mouseX - p.x, mouseY - p.y) < 20) cleanMess(idx);
@@ -836,7 +903,7 @@ canvas.addEventListener('click', function(e) {
                     log(`Matched colored yarn! Gained +10 points!`);
                     
                     if(mg.score >= mg.target) {
-                        state.hearts += 10; state.coins += 12;
+                        state.hearts += 10; state.coins += 12; state.statGamesPlayed += 1;
                         log(`Success! You hit 50 points! ${state.name} rolling around in yarn layers. (+10 Hearts, +12 Coins)`);
                         updateUIValues(); closeAllPanels(); saveGameProgress();
                     }
@@ -853,10 +920,10 @@ function handleMinigameClick() {
     if(state.minigame.type === 'dog_fetch') {
         const p = state.minigame.data.pos;
         if(p >= state.minigame.data.targetMin && p <= state.minigame.data.targetMax) {
-            state.hearts += 8; state.coins += 10;
+            state.hearts += 8; state.coins += 10; state.statGamesPlayed += 1;
             log(`Perfect throw! 🎾 ${state.name} caught the ball clean out of mid-air! (+8 Hearts, +10 Coins)`);
         } else {
-            state.hearts += 2;
+            state.hearts += 2; state.statGamesPlayed += 1;
             log(`You overthrew. ${state.name} tracked it down in the grass anyway.`);
         }
         updateUIValues(); closeAllPanels(); saveGameProgress();
@@ -907,7 +974,7 @@ function initLizardMemoryGame() {
                         c1.style.visibility = 'hidden'; c2.style.visibility = 'hidden';
                         state.minigame.data.matchesNeeded--;
                         if(state.minigame.data.matchesNeeded === 0) {
-                            state.coins += 20; state.hearts += 15;
+                            state.coins += 20; state.hearts += 15; state.statGamesPlayed += 1;
                             log("Lizard matched all forage cards flawlessly! Earned 🪙20, 💕15!");
                             updateUIValues(); closeAllPanels(); saveGameProgress();
                         }
@@ -923,7 +990,7 @@ function initLizardMemoryGame() {
     });
     panel.appendChild(gridDiv);
 }
-// --- RENDERING GRAPHICS LOGIC ---
+// --- COZY SANCTUARY SYSTEM DRAWING LOOPS ---
 function renderLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -933,9 +1000,9 @@ function renderLoop() {
         ctx.fillStyle = '#614834'; for(let i=30; i<550; i+=140) ctx.fillRect(i, 60, 20, 60);
         ctx.fillStyle = '#3a6634'; for(let i=10; i<550; i+=140) { ctx.beginPath(); ctx.arc(40+i, 50, 45, 0, Math.PI*2); ctx.fill(); }
     } else {
-        if(state.wallpaper.includes('Panel')) ctx.fillStyle = '#d4a373';
-        else if(state.wallpaper.includes('Brick')) ctx.fillStyle = '#b5654d';
-        else if(state.wallpaper.includes('Floral')) ctx.fillStyle = '#e9edc9';
+        if(state.wallpaper && state.wallpaper.includes('Panel')) ctx.fillStyle = '#d4a373';
+        else if(state.wallpaper && state.wallpaper.includes('Brick')) ctx.fillStyle = '#b5654d';
+        else if(state.wallpaper && state.wallpaper.includes('Floral')) ctx.fillStyle = '#e9edc9';
         else ctx.fillStyle = '#fdf3e7';
         
         ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -969,7 +1036,6 @@ function renderLoop() {
         ctx.fillStyle = '#eadeca'; ctx.fillRect(100, 80, 350, 180);
         ctx.strokeStyle = '#7f675b'; ctx.lineWidth = 4; ctx.strokeRect(100, 80, 350, 180);
     }
-
     if((state.type==='fish' || state.type==='lizard') && DECOR_ITEMS[state.type]) {
         DECOR_ITEMS[state.type].forEach((item, idx) => {
             if(!item.active) return;
@@ -995,7 +1061,7 @@ function renderLoop() {
     if(state.isSleeping) {
         ctx.fillStyle = '#c1d3fe'; ctx.beginPath(); ctx.arc(cx+20, cy+25, 35, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = pal.c1; ctx.beginPath(); ctx.arc(cx+10, cy+15, 20, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#333'; ctx.font="12px Arial"; ctx.fillText("Zzz..", cx+5, cy-15);
+        ctx.fillStyle = '#333'; ctx.font="12px Arial"; ctx.fillText("💤", cx+5, cy-15);
     } else {
         ctx.fillStyle = pal.c1;
         if(state.type === 'dog') {
@@ -1026,8 +1092,7 @@ function renderLoop() {
             }
         }
     }
-
-    if(state.minigame.active) {
+    if(state.minigame && state.minigame.active) {
         if(state.minigame.type === 'dog_fetch') {
             ctx.fillStyle = '#ccc'; ctx.fillRect(150, 20, 250, 25);
             ctx.fillStyle = '#6ebd71'; ctx.fillRect(240, 20, 70, 25);
@@ -1074,15 +1139,46 @@ function renderLoop() {
         }
     }
 
+    if(state.isSleeping && state.dreamBubbles) {
+        state.dreamBubbles.forEach(bubble => {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.strokeStyle = '#d4bda7'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(bubble.x, bubble.y, bubble.r || 18, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+            
+            ctx.fillStyle = '#5c4a3c'; ctx.font = "14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(bubble.item, bubble.x, bubble.y);
+        });
+    }
+
     requestAnimationFrame(renderLoop);
 }
 
-// --- CORE MASTER ENGINE INTERVAL TICKS ---
+// --- CORE MASTER TICK LIFE TIMERS ---
 setInterval(() => {
     updateEngine();
     if(state.name && !state.isSleeping && Math.random() < 0.05 && state.dirtLayer < 6) {
         state.dirtLayer += 1;
         log(`${state.name} gathered some loose leaves! Tap the 'Sponge Tool' to clean them up.`);
+    }
+
+    if(state.name && state.isSleeping) {
+        if(!state.dreamBubbles) state.dreamBubbles = [];
+        state.dreamBubbles.forEach(b => { b.y -= b.speed; });
+        state.dreamBubbles = state.dreamBubbles.filter(b => b.y > 60);
+
+        if(Math.random() < 0.25 && state.dreamBubbles.length < 4) {
+            const pools = ['🦴', '🐟', '🧶', '🪴', '🌟', '🥞', '🦋', '🍄'];
+            state.dreamBubbles.push({
+                x: 120 + Math.random() * 310,
+                y: 230,
+                r: 18,
+                item: pools[Math.floor(Math.random() * pools.length)],
+                speed: 0.6 + Math.random() * 0.8
+            });
+        }
+    } else {
+        state.dreamBubbles = [];
     }
     updateUIValues();
 }, 1000);

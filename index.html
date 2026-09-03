@@ -147,10 +147,6 @@
             margin-bottom: 6px;
             border: 1px solid #ebdcd0;
         }
-        .badge-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; text-align: center; }
-        .badge-icon { font-size: 20px; filter: grayscale(100%); opacity: 0.4; transition: all 0.3s; }
-        .badge-icon.unlocked { filter: grayscale(0%); opacity: 1; transform: scale(1.1); }
-        .badge-label { font-size: 8px; font-weight: bold; display: block; margin-top: 2px; }
         .log-box {
             background: #f1ede6;
             border-radius: 8px;
@@ -196,7 +192,7 @@
 </head>
 <body>
 <div id="game-container">
-    <!-- TUTORIAL STEP OVERLAY -->
+    <!-- TUTORIAL STEP OVERLAY MASK -->
     <div id="tutorial-screen" class="tutorial-overlay hidden">
         <div class="tutorial-bubble">
             <p id="tutorial-text" style="color:var(--text-color); font-weight:bold; margin-bottom:12px;"></p>
@@ -207,7 +203,7 @@
         </div>
     </div>
 
-    <!-- SCREEN 1: ADOPTION MENU -->
+    <!-- SCREEN 1: ADOPTION SELECTION -->
     <div id="screen-welcome" class="screen">
         <h1>🏡 Cottagecore Pets 🌿</h1>
         <p style="text-align:center; margin-bottom:20px;">Welcome to your cozy digital sanctuary. Choose a sweet companion to care for.</p>
@@ -219,7 +215,7 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: CUSTOMIZATION DRAWER -->
+    <!-- SCREEN 2: BREED CUSTOMIZATION -->
     <div id="screen-custom" class="screen hidden">
         <h2 id="custom-title">Adopt your Friend</h2>
         <label for="pet-name">Give them a beautiful name:</label>
@@ -238,7 +234,7 @@
         
         <button class="btn" style="margin-top:20px; width:100%;" onclick="finalizePetCreation()">Bring Home ✨</button>
     </div>
-    <!-- SCREEN 3: MAIN LOOP HUD SYSTEM -->
+    <!-- SCREEN 3: MAIN GAMEPLAY LOOP -->
     <div id="screen-main" class="screen hidden">
         <div class="status-bar" id="screen-main-status">
             <div>🏡 <span id="display-pet-name">Pet</span> (<span id="display-pet-details">Breed</span>)</div>
@@ -251,7 +247,7 @@
             <canvas id="game-canvas" width="550" height="320"></canvas>
         </div>
 
-        <!-- Master controls layout -->
+        <!-- Master controls layout grid -->
         <div class="controls-grid" id="main-controls">
             <button class="btn" id="btn-play" onclick="openInteraction('play')">🧸 Play</button>
             <button class="btn" id="btn-feed" onclick="openInteraction('feed')">🧺 Market</button>
@@ -261,7 +257,7 @@
             <button class="btn" id="btn-decor" onclick="openInteraction('decor')">🎨 Decorate</button>
         </div>
 
-        <!-- Utility features tray -->
+        <!-- Care Utility and Hard Reset Panel Bar -->
         <div class="flex-center" style="margin-top: 8px; border: 1px dashed var(--border-color); padding: 5px; border-radius: 10px;">
             <button class="btn" id="btn-sponge" style="background:#5c8a97;" onclick="activateSpongeTool()">🧼 Sponge Tool</button>
             <button class="btn" style="background:#a67c52;" onclick="triggerPhotoDownload()">📸 Photo Album</button>
@@ -271,21 +267,8 @@
 
         <div class="flex-center" style="margin-top: 5px;">
             <button class="btn" style="background:#b39274" onclick="speakToPet('love')">🗣️ "I love you!"</button>
-            <button class="btn" style="background:#b39274" onclick="speakToPet('night')">🗣️ "Good night!"</button>
             <button class="btn" style="background:#b39274" onclick="speakToPet('job')">🗣️ "Good job!"</button>
         </div>
-        <!-- New Achievement Badges Shelf Display Drawer -->
-        <div style="margin-top: 12px; padding: 10px; background: #fffdfa; border: 1px solid var(--border-color); border-radius: 12px;">
-            <h4 style="font-size:11px; text-align:center; color:#6e8469;">🌸 Sanctuary Achievements Shelf 🏆</h4>
-            <div class="badge-grid">
-                <div><span class="badge-icon" id="badge-forage">🧺</span><span class="badge-label">Forager</span></div>
-                <div><span class="badge-icon" id="badge-hearts">❤️</span><span class="badge-label">Companion</span></div>
-                <div><span class="badge-icon" id="badge-clean">🧼</span><span class="badge-label">Neat Freak</span></div>
-                <div><span class="badge-icon" id="badge-rich">🪙</span><span class="badge-label">Millionaire</span></div>
-                <div><span class="badge-icon" id="badge-gamer">🎮</span><span class="badge-label">Gamer</span></div>
-            </div>
-        </div>
-
         <!-- Sub Panels for Activities -->
         <div id="panel-feed" class="sub-panel hidden">
             <h3>Village Market & Weather Machine</h3>
@@ -331,10 +314,10 @@ const state = {
     spongeActive: false,
     dirtLayer: 0,
     lastForageTime: 0,
-    // Achievement counters maps setup
-    statForaged: 0, statCleaned: 0, statGamesPlayed: 0,
+    // Expanded Tracking Metrics for Achievements & Event Spawners
+    statGamesPlayed: 0,
+    statCleaned: 0,
     unlockedBadges: [],
-    // Dream bubbles collection parameters tracking configuration
     dreamBubbles: []
 };
 
@@ -452,7 +435,7 @@ function skipTutorial() {
     
     state.tutorialStep = 0;
     document.getElementById('tutorial-screen').classList.add('hidden');
-    log("Walkthrough dismissed! Check the Achievements shelf below the canvas!");
+    log("Walkthrough dismissed! Tap 'Sponge Tool' or 'Photo Album' to check the new upgrades!");
     saveGameProgress();
 }
 
@@ -481,37 +464,36 @@ function showTutorialStep() {
             textEl.innerText = "This is the play button to launch customized minigames!";
             document.getElementById('btn-play').classList.add('highlight-element');
         } else {
-            textEl.innerText = "This is the decorate button! Place structural wallpaper modifications here.";
+            textEl.innerText = "This is the decorate button! Place backgrounds and items into your custom companion container.";
             document.getElementById('btn-decor').classList.add('highlight-element');
         }
     } else if(state.tutorialStep === 2) {
-        textEl.innerText = "This is the market button. Buy snacks or adjust ambient weather conditions!";
+        textEl.innerText = "This is the market button. Buy snacks or toggle room weather conditions here!";
         document.getElementById('btn-feed').classList.add('highlight-element');
     } else if(state.tutorialStep === 3) {
-        textEl.innerText = "This is the pet button! Stroke your animal friend to acquire gold coins.";
+        textEl.innerText = "This is the pet button! Display affection to gain extra gold currency.";
         document.getElementById('btn-pet').classList.add('highlight-element');
     } else if(state.tutorialStep === 4) {
         if(state.type === 'dog' || state.type === 'cat') {
-            textEl.innerText = "This is the Forest walk button to discover hidden leaf clutter packages.";
+            textEl.innerText = "This is the Forest walk button to forage out in the woodlands!";
             document.getElementById('btn-walk').classList.add('highlight-element');
         } else {
             advanceTutorial(); 
         }
     } else if(state.tutorialStep === 5) {
-        textEl.innerText = "This is the sleep button! Rest your buddy to trigger custom interactive Dream Bubbles!";
+        textEl.innerText = "This is the sleep button! Put your pet to rest to replenish their energetic metrics.";
         document.getElementById('btn-sleep').classList.add('highlight-element');
     }
 }
 
 function resetAllGameProgress() {
-    if(confirm("Are you sure you want to abandon your current pet? You will lose all coins, hearts, decorations, and earned badges to choose a completely new animal!")) {
+    if(confirm("Are you sure you want to abandon your current pet? You will lose all coins, hearts, and bought items to choose a completely new animal!")) {
         localStorage.removeItem('cozy_pet_savefile');
         
         state.type = ''; state.name = ''; state.gender = ''; state.breed = '';
         state.hearts = 0; state.coins = 30; state.weather = 'sunny'; state.wallpaper = 'plain';
         state.poops = []; state.dirtLayer = 0; state.lastForageTime = 0;
-        state.statForaged = 0; state.statCleaned = 0; state.statGamesPlayed = 0;
-        state.unlockedBadges = []; state.dreamBubbles = [];
+        state.statCleaned = 0; state.statGamesPlayed = 0; state.unlockedBadges = []; state.dreamBubbles = [];
         closeAllPanels();
         
         Object.keys(DECOR_ITEMS).forEach(k => {
@@ -522,9 +504,7 @@ function resetAllGameProgress() {
         document.getElementById('screen-welcome').classList.remove('hidden');
         document.getElementById('pet-name').value = '';
         
-        // Refresh badges display grayscale opacity limits
-        document.querySelectorAll('.badge-icon').forEach(b => b.classList.remove('unlocked'));
-        log("Sanctuary logs wiped safely! Ready to adopt a brand new friend.");
+        log("Progress cleared completely! Pick a brand new friend to start fresh.");
     }
 }
 function openInteraction(panelType) {
@@ -565,6 +545,16 @@ function openInteraction(panelType) {
     }
 }
 
+function closeAllPanels() {
+    state.activePanel = null;
+    document.getElementById('panel-feed').classList.add('hidden');
+    document.getElementById('panel-decor').classList.add('hidden');
+    document.getElementById('panel-minigame').classList.add('hidden');
+    state.minigame.active = false;
+    const oldGrid = document.getElementById('lizard-subgrid');
+    if(oldGrid) oldGrid.remove();
+}
+
 function updateUIValues() {
     document.getElementById('val-hearts').innerText = state.hearts;
     document.getElementById('val-coins').innerText = state.coins;
@@ -576,28 +566,6 @@ function updateUIValues() {
     } else {
         btnForage.classList.add('hidden');
     }
-    
-    checkBadgeUnlocks();
-}
-
-// --- BADGE SYSTEM ENGINE UNLOCK VERIFICATION TRACKING ---
-function checkBadgeUnlocks() {
-    if(!state.name) return;
-    const checkUnlock = (badgeId, condition, msg) => {
-        if(!state.unlockedBadges.includes(badgeId) && condition) {
-            state.unlockedBadges.push(badgeId);
-            state.coins += 50; // Give milestone bonus money
-            document.getElementById(`badge-${badgeId}`).classList.add('unlocked');
-            log(`🏆 ACQUIRED BADGE: [${msg}]! Claimed +50 Gold coins bonus!`);
-            saveGameProgress();
-        }
-    };
-    
-    checkUnlock('forage', state.statForaged >= 3, "Master Forager (Forage 3 times)");
-    checkUnlock('hearts', state.hearts >= 60, "Best Companion (Hit 60 Hearts)");
-    checkUnlock('clean', state.statCleaned >= 3, "Neat Freak (Sponge away dirt 3 times)");
-    checkUnlock('rich', state.coins >= 150, "Millionaire Wallet (Save up 150 Coins)");
-    checkUnlock('gamer', state.statGamesPlayed >= 3, "Arcade Enthusiast (Play 3 minigames)");
 }
 
 function saveGameProgress() {
@@ -606,7 +574,7 @@ function saveGameProgress() {
         type: state.type, name: state.name, gender: state.gender, breed: state.breed,
         hearts: state.hearts, coins: state.coins, weather: state.weather,
         wallpaper: state.wallpaper, lastForageTime: state.lastForageTime,
-        statForaged: state.statForaged, statCleaned: state.statCleaned, statGamesPlayed: state.statGamesPlayed,
+        statCleaned: state.statCleaned, statGamesPlayed: state.statGamesPlayed,
         unlockedBadges: state.unlockedBadges, decors: DECOR_ITEMS[state.type]
     };
     localStorage.setItem('cozy_pet_savefile', JSON.stringify(packed));
@@ -620,10 +588,12 @@ function loadGameProgress() {
         state.type = parsed.type; state.name = parsed.name; state.gender = parsed.gender; state.breed = parsed.breed;
         state.hearts = parsed.hearts; state.coins = parsed.coins; state.weather = parsed.weather || 'sunny';
         state.wallpaper = parsed.wallpaper || 'plain'; state.lastForageTime = parsed.lastForageTime || 0;
-        state.statForaged = parsed.statForaged || 0; state.statCleaned = parsed.statCleaned || 0; state.statGamesPlayed = parsed.statGamesPlayed || 0;
+        state.statCleaned = parsed.statCleaned || 0; state.statGamesPlayed = parsed.statGamesPlayed || 0;
         state.unlockedBadges = parsed.unlockedBadges || [];
         
-        if(parsed.decors && DECOR_ITEMS[state.type]) DECOR_ITEMS[state.type] = parsed.decors;
+        if(parsed.decors && DECOR_ITEMS[state.type]) {
+            DECOR_ITEMS[state.type] = parsed.decors;
+        }
         
         document.getElementById('screen-welcome').classList.add('hidden');
         document.getElementById('screen-main').classList.remove('hidden');
@@ -631,17 +601,10 @@ function loadGameProgress() {
         document.getElementById('display-pet-details').innerText = `${state.gender === 'girl' ? '🎀' : '🧢'} ${state.breed}`;
         document.getElementById('weather-selector').value = state.weather;
         
-        // Light up unlocked elements structures
-        state.unlockedBadges.forEach(badgeId => {
-            const el = document.getElementById(`badge-${badgeId}`);
-            if(el) el.classList.add('unlocked');
-        });
-        
         log(`Welcome back! ${state.name} was waiting for you happily.`);
         buildMarketUI(); buildDecorUI(); updateUIValues();
-        requestAnimationFrame(renderLoop);
     } catch(err) {
-        console.error("Auto-save load failed.", err);
+        console.error("Failed loading save registry logs file.", err);
     }
 }
 function petAnimal() {
@@ -667,14 +630,12 @@ function toggleSleep() {
     state.isSleeping = !state.isSleeping;
     closeAllPanels();
     if(state.isSleeping) {
-        log(`${state.name} curled up and fell fast asleep. Catch their Dream Bubbles inside the canvas! 💭`);
+        log(`${state.name} curls up snuggly into their blanket...`);
         document.getElementById('thought-bubble').style.display = 'none';
         document.getElementById('btn-sleep').innerText = '☀️ Wake Up';
-        state.dreamBubbles = []; // Flush old frames out
     } else {
         log(`${state.name} stretches out and wakes up refreshed!`);
         document.getElementById('btn-sleep').innerText = '💤 Sleep';
-        state.dreamBubbles = [];
         triggerNewThought();
     }
     saveGameProgress();
@@ -716,6 +677,23 @@ function activateSpongeTool() {
         log("Sponge stored away.");
     }
 }
+function checkAchievements() {
+    if (!state.name) return;
+    const badges = [
+        { id: 'badge_games', name: "🏆 Elite Gamer", condition: (state.statGamesPlayed >= 5), reward: 50, msg: "Played 5 minigames!" },
+        { id: 'badge_clean', name: "🧼 Pristine Care", condition: (state.statCleaned >= 5), reward: 30, msg: "Scrubbed your pet clean 5 times!" },
+        { id: 'badge_hearts', name: "💖 Soul Mates", condition: (state.hearts >= 100), reward: 100, msg: "Reached 100 Hearts of deep friendship!" }
+    ];
+    badges.forEach(b => {
+        if (b.condition && !state.unlockedBadges.includes(b.id)) {
+            state.unlockedBadges.push(b.id);
+            state.coins += b.reward;
+            log(`🏅 UNLOCKED BADGE: [${b.name}] - ${b.msg} (+🪙${b.reward} Bonus Gold!)`);
+            updateUIValues();
+        }
+    });
+}
+
 function adjustWeather(val) {
     state.weather = val;
     log(`The sky shifts outside the window. Environment: ${val.toUpperCase()} mode active!`);
@@ -734,19 +712,13 @@ function triggerPhotoDownload() {
 function claimWildForage() {
     const now = Date.now();
     if(now - state.lastForageTime < 3600000) { log("The forage basket fills up slowly! Check back in an hour."); return; }
-    
     state.lastForageTime = now;
-    state.statForaged += 1;
-    
     const rewards = [
-        { n: "🍄 Rare Chanterelle Cluster", g: 25 },
-        { n: "💐 Wild Lavender sprigs", g: 15 },
-        { n: "🪙 Pouch of lost travelers gold", g: 40 },
-        { n: "🍀 Lucky four-leaf clover", g: 20 }
+        { n: "🍄 Rare Chanterelle Cluster", g: 25 }, { n: "💐 Wild Lavender sprigs", g: 15 },
+        { n: "🪙 Pouch of lost gold", g: 40 }, { n: "🍀 Lucky four-leaf clover", g: 20 }
     ];
     const prize = rewards[Math.floor(Math.random() * rewards.length)];
     state.coins += prize.g; state.hearts += 5;
-    
     log(`Forage discovery: Found [${prize.n}]! Added 🪙${prize.g} to wallet.`);
     updateUIValues(); saveGameProgress();
 }
@@ -786,7 +758,7 @@ function buyFood(name, cost) {
         state.hearts += 4;
         log(`${state.name} contentedly enjoys the tasty ${name}.`);
     }
-    updateUIValues(); closeAllPanels(); saveGameProgress();
+    updateUIValues(); closeAllPanels(); checkAchievements(); saveGameProgress();
 }
 function buildDecorUI() {
     const container = document.getElementById('decor-items-list');
@@ -812,7 +784,6 @@ function buyDecor(index) {
         state.wallpaper = item.n;
         DECOR_ITEMS[state.type].forEach((other, oi) => { if(oi !== index && (other.n.includes('Panel') || other.n.includes('Brick') || other.n.includes('Floral'))) other.active = false; });
     }
-    
     log(`Purchased and placed the lovely ${item.n}!`);
     updateUIValues(); buildDecorUI(); saveGameProgress();
 }
@@ -827,12 +798,11 @@ function toggleDecor(index) {
     } else if(!item.active && (item.n.includes('Panel') || item.n.includes('Brick') || item.n.includes('Floral'))) {
         state.wallpaper = 'plain';
     }
-    
     log(`${item.active ? 'Placed' : 'Stored'} ${item.n}.`);
     buildDecorUI(); saveGameProgress();
 }
 
-// --- CANVAS MULTI-MODE MOUSE INTERCEPT LISTENERS ---
+// --- CANVAS MOUSE CLICK INTERCEPT LISTENERS ---
 canvas.addEventListener('mousemove', function(e) {
     if(!state.spongeActive || state.dirtLayer <= 0) return;
     const rect = canvas.getBoundingClientRect();
@@ -841,7 +811,6 @@ canvas.addEventListener('mousemove', function(e) {
     
     let cx = 250, cy = 180;
     if(state.type === 'fish' || state.type === 'lizard') { cx = 240; cy = 150; }
-    
     if(Math.hypot(mouseX - cx, mouseY - cy) < 60) {
         state.dirtLayer -= 0.4;
         if(state.dirtLayer <= 0) {
@@ -849,7 +818,7 @@ canvas.addEventListener('mousemove', function(e) {
             log(`Sparkling clean! You scrubbed all leaf clutter off ${state.name}! (+10 Hearts, +5 Gold)`);
             state.spongeActive = false;
             document.getElementById('btn-sponge').style.background = '#5c8a97';
-            updateUIValues(); saveGameProgress();
+            updateUIValues(); checkAchievements(); saveGameProgress();
         }
     }
 });
@@ -859,24 +828,20 @@ canvas.addEventListener('mousedown', function(e) {
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
     
-    // Process sleeping mode interactive Dream Bubble click hits checks
     if(state.isSleeping && state.dreamBubbles.length > 0) {
         for(let i = state.dreamBubbles.length - 1; i >= 0; i--) {
             let b = state.dreamBubbles[i];
-            if(Math.hypot(mouseX - b.x, mouseY - b.y) < b.r + 15) {
+            if(Math.hypot(mouseX - b.x, mouseY - b.y) < 30) {
                 state.dreamBubbles.splice(i, 1);
                 state.hearts += 3;
                 log(`Popped a Dream Bubble! 💕 Given ${state.name} happy thoughts! (+3 Hearts)`);
-                updateUIValues(); saveGameProgress();
-                return;
+                updateUIValues(); checkAchievements(); saveGameProgress(); return;
             }
         }
     }
 
     if(state.isWalking && state.poops.length > 0) {
-        state.poops.forEach((p, idx) => {
-            if(Math.hypot(mouseX - p.x, mouseY - p.y) < 20) cleanMess(idx);
-        });
+        state.poops.forEach((p, idx) => { if(Math.hypot(mouseX - p.x, mouseY - p.y) < 20) cleanMess(idx); });
     }
 
     if(state.minigame.active && state.minigame.type === 'cat_match3') {
@@ -905,7 +870,7 @@ canvas.addEventListener('mousedown', function(e) {
                     if(mg.score >= mg.target) {
                         state.hearts += 10; state.coins += 12; state.statGamesPlayed += 1;
                         log(`Success! You hit 50 points! ${state.name} rolling around in yarn layers. (+10 Hearts, +12 Coins)`);
-                        updateUIValues(); closeAllPanels(); saveGameProgress();
+                        updateUIValues(); closeAllPanels(); checkAchievements(); saveGameProgress();
                     }
                 }
                 mg.data.selectedIdx = null;
@@ -916,7 +881,6 @@ canvas.addEventListener('mousedown', function(e) {
 
 function handleMinigameClick() {
     if(!state.minigame.active) return;
-    
     if(state.minigame.type === 'dog_fetch') {
         const p = state.minigame.data.pos;
         if(p >= state.minigame.data.targetMin && p <= state.minigame.data.targetMax) {
@@ -926,7 +890,7 @@ function handleMinigameClick() {
             state.hearts += 2; state.statGamesPlayed += 1;
             log(`You overthrew. ${state.name} tracked it down in the grass anyway.`);
         }
-        updateUIValues(); closeAllPanels(); saveGameProgress();
+        updateUIValues(); closeAllPanels(); checkAchievements(); saveGameProgress();
     } else if(state.minigame.type === 'swim') {
         state.minigame.data.vel = -5.5;
     } else if(state.minigame.type === 'cat_match3' || state.minigame.type === 'memory') {
@@ -937,9 +901,7 @@ function handleMinigameClick() {
 function initCatMatch3() {
     const colors = ['#e07a5f', '#3d5a80', '#ee6c4d', '#98c1d9', '#81b29a'];
     state.minigame.data.grid = [];
-    for(let i=0; i<16; i++) {
-        state.minigame.data.grid.push(colors[Math.floor(Math.random()*colors.length)]);
-    }
+    for(let i=0; i<16; i++) { state.minigame.data.grid.push(colors[Math.floor(Math.random()*colors.length)]); }
 }
 
 function initLizardMemoryGame() {
@@ -953,7 +915,6 @@ function initLizardMemoryGame() {
     
     const icons = ['🍄', '🍂', '🍀', '🐌', '🦋', '🐞', '🍄', '🍂', '🍀', '🐌', '🦋', '🐞'];
     icons.sort(() => Math.random() - 0.5);
-    
     let activeFlipped = [];
     state.minigame.data = { matchesNeeded: 6 };
     
@@ -970,222 +931,3 @@ function initLizardMemoryGame() {
             if(activeFlipped.length === 2) {
                 setTimeout(() => {
                     let [c1, c2] = activeFlipped;
-                    if(c1.innerText === c2.innerText) {
-                        c1.style.visibility = 'hidden'; c2.style.visibility = 'hidden';
-                        state.minigame.data.matchesNeeded--;
-                        if(state.minigame.data.matchesNeeded === 0) {
-                            state.coins += 20; state.hearts += 15; state.statGamesPlayed += 1;
-                            log("Lizard matched all forage cards flawlessly! Earned 🪙20, 💕15!");
-                            updateUIValues(); closeAllPanels(); saveGameProgress();
-                        }
-                    } else {
-                        c1.style.color = 'transparent'; c1.style.background = '#d4bda7';
-                        c2.style.color = 'transparent'; c2.style.background = '#d4bda7';
-                    }
-                    activeFlipped = [];
-                }, 700);
-            }
-        };
-        gridDiv.appendChild(card);
-    });
-    panel.appendChild(gridDiv);
-}
-// --- COZY SANCTUARY SYSTEM DRAWING LOOPS ---
-function renderLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if(state.isWalking) {
-        ctx.fillStyle = '#bce3b5'; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = '#6fa867'; ctx.fillRect(0,0,canvas.width,120);
-        ctx.fillStyle = '#614834'; for(let i=30; i<550; i+=140) ctx.fillRect(i, 60, 20, 60);
-        ctx.fillStyle = '#3a6634'; for(let i=10; i<550; i+=140) { ctx.beginPath(); ctx.arc(40+i, 50, 45, 0, Math.PI*2); ctx.fill(); }
-    } else {
-        if(state.wallpaper && state.wallpaper.includes('Panel')) ctx.fillStyle = '#d4a373';
-        else if(state.wallpaper && state.wallpaper.includes('Brick')) ctx.fillStyle = '#b5654d';
-        else if(state.wallpaper && state.wallpaper.includes('Floral')) ctx.fillStyle = '#e9edc9';
-        else ctx.fillStyle = '#fdf3e7';
-        
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = '#eedcc5'; ctx.fillRect(0,220,canvas.width,100);
-        ctx.strokeStyle = '#dfc3a7'; ctx.lineWidth = 2;
-        for(let i=0; i<=canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,220); ctx.lineTo(i,canvas.height); ctx.stroke(); }
-    }
-
-    if(!state.isWalking && !state.minigame.active) {
-        if(state.weather === 'rainy') {
-            ctx.strokeStyle = 'rgba(174,214,241,0.6)'; ctx.lineWidth = 2;
-            for(let i=0; i<8; i++) {
-                let rx = (Date.now() + i * 70) % canvas.width;
-                let ry = (Date.now() * 1.5 + i * 40) % 220;
-                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 3, ry + 12); ctx.stroke();
-            }
-        } else if(state.weather === 'snowy') {
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            for(let i=0; i<12; i++) {
-                let sx = (Date.now()*0.3 + i * 50) % canvas.width;
-                let sy = (Date.now()*0.5 + i * 30) % 220;
-                ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI*2); ctx.fill();
-            }
-        }
-    }
-
-    if(state.type === 'fish') {
-        ctx.fillStyle = '#a2d2ff'; ctx.fillRect(100, 80, 350, 180);
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.strokeRect(100, 80, 350, 180);
-    } else if(state.type === 'lizard') {
-        ctx.fillStyle = '#eadeca'; ctx.fillRect(100, 80, 350, 180);
-        ctx.strokeStyle = '#7f675b'; ctx.lineWidth = 4; ctx.strokeRect(100, 80, 350, 180);
-    }
-    if((state.type==='fish' || state.type==='lizard') && DECOR_ITEMS[state.type]) {
-        DECOR_ITEMS[state.type].forEach((item, idx) => {
-            if(!item.active) return;
-            ctx.fillStyle = item.n.includes('Coral') ? '#ff7096' : item.n.includes('Castle') ? '#b388ff' : item.n.includes('Ivy') ? '#52b788' : '#7a5435';
-            ctx.fillRect(130 + (idx*90), 200, 60, 50);
-        });
-    }
-
-    if(state.isWalking) {
-        state.poops.forEach(p => {
-            ctx.fillStyle = '#7a583a'; ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff'; ctx.font="10px Arial"; ctx.fillText("🗑️", p.x-7, p.y+4);
-        });
-        ctx.fillStyle = '#a3846b'; ctx.fillRect(430, 180, 45, 35);
-        ctx.fillRect(460, 165, 20, 20); ctx.fillStyle = '#111'; ctx.fillRect(472, 170, 4, 4);
-        ctx.fillStyle = '#dfaf8f'; ctx.fillRect(445, 175, 10, 8);
-    }
-
-    const pal = PALETTES[state.breed] || {c1:'#fff', c2:'#888', e:'#000'};
-    let cx = 250, cy = 180;
-    if(state.type === 'fish' || state.type === 'lizard') { cx = 240; cy = 150; }
-
-    if(state.isSleeping) {
-        ctx.fillStyle = '#c1d3fe'; ctx.beginPath(); ctx.arc(cx+20, cy+25, 35, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = pal.c1; ctx.beginPath(); ctx.arc(cx+10, cy+15, 20, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#333'; ctx.font="12px Arial"; ctx.fillText("💤", cx+5, cy-15);
-    } else {
-        ctx.fillStyle = pal.c1;
-        if(state.type === 'dog') {
-            ctx.fillRect(cx, cy, 65, 45);
-            ctx.fillStyle = pal.c2; ctx.fillRect(cx+45, cy-20, 30, 30);
-            ctx.fillStyle = pal.e; ctx.fillRect(cx+65, cy-15, 5, 5);
-            ctx.fillStyle = '#000'; ctx.fillRect(cx+73, cy-10, 4, 4);
-        } else if(state.type === 'cat') {
-            ctx.fillRect(cx, cy, 55, 40);
-            ctx.fillStyle = pal.c2; ctx.fillRect(cx+35, cy-20, 28, 28);
-            ctx.fillStyle = pal.c1; ctx.fillRect(cx+38, cy-30, 8, 10); ctx.fillRect(cx+51, cy-30, 8, 10);
-            ctx.fillStyle = pal.e; ctx.fillRect(cx+53, cy-15, 4, 4);
-        } else if(state.type === 'fish') {
-            ctx.beginPath(); ctx.ellipse(cx+20, cy+10, 30, 18, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = pal.c2; ctx.beginPath(); ctx.moveTo(cx, cy+10); ctx.lineTo(cx-15, cy-5); ctx.lineTo(cx-15, cy+25); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.fillRect(cx+38, cy+5, 4, 4);
-        } else if(state.type === 'lizard') {
-            ctx.fillRect(cx, cy+10, 60, 20);
-            ctx.fillStyle = pal.c2; ctx.fillRect(cx+50, cy, 22, 18);
-            ctx.fillStyle = pal.c1; ctx.fillRect(cx-20, cy+15, 20, 6);
-            ctx.fillStyle = pal.e; ctx.fillRect(cx+62, cy+4, 4, 4);
-        }
-        
-        if(state.dirtLayer > 0) {
-            ctx.fillStyle = '#7d8f76';
-            for(let i=0; i<Math.floor(state.dirtLayer); i++) {
-                ctx.fillRect(cx + 10 + (i*8)%40, cy + 5 + (i*12)%20, 6, 4);
-            }
-        }
-    }
-    if(state.minigame && state.minigame.active) {
-        if(state.minigame.type === 'dog_fetch') {
-            ctx.fillStyle = '#ccc'; ctx.fillRect(150, 20, 250, 25);
-            ctx.fillStyle = '#6ebd71'; ctx.fillRect(240, 20, 70, 25);
-            state.minigame.data.pos += state.minigame.data.dir;
-            if(state.minigame.data.pos > 390 || state.minigame.data.pos < 150) state.minigame.data.dir *= -1;
-            ctx.fillStyle = '#d94141'; ctx.fillRect(state.minigame.data.pos, 15, 6, 35);
-        } else if(state.minigame.type === 'cat_match3') {
-            ctx.fillStyle = 'rgba(255,254,249,0.96)'; ctx.fillRect(160, 15, 230, 220);
-            ctx.fillStyle = '#5c4a3c'; ctx.font = "bold 11px Courier New"; ctx.fillText(`Points: ${state.minigame.score}/50`, 175, 35);
-            if(state.minigame.data.grid) {
-                state.minigame.data.grid.forEach((col, idx) => {
-                    let gx = 175 + (idx % 4) * 45; let gy = 55 + Math.floor(idx / 4) * 42;
-                    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(gx+22, gy+20, 16, 0, Math.PI*2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                    if(state.minigame.data.selectedIdx === idx) { ctx.strokeStyle = '#d94141'; ctx.lineWidth = 3; ctx.stroke(); }
-                });
-            }
-        } else if (state.minigame.type === 'swim') {
-            ctx.fillStyle = 'rgba(26, 82, 118, 0.45)'; ctx.fillRect(100, 80, 350, 180);
-            const swim = state.minigame.data;
-            ctx.save(); ctx.beginPath(); ctx.rect(100, 80, 350, 180); ctx.clip();
-            ctx.fillStyle = '#fff'; ctx.font = "20px Arial"; ctx.fillText("🐟", 120, swim.y);
-            swim.vel += 0.22; swim.y += swim.vel;
-            if(swim.y < 95) { swim.y = 95; swim.vel = 0; }
-            if(swim.y > 245) { swim.y = 245; swim.vel = 0; }
-            swim.timer++;
-            if(swim.timer % 75 === 0) { swim.obstacles.push({ x: 450, y: 95 + Math.random() * 140, size: 10 + Math.random() * 12 }); }
-            ctx.fillStyle = '#7f8c8d';
-            for(let i = swim.obstacles.length - 1; i >= 0; i--) {
-                let obs = swim.obstacles[i]; obs.x -= 3.8;
-                ctx.font = `${obs.size * 1.5}px Arial`; ctx.fillText("🪨", obs.x, obs.y);
-                let distance = Math.hypot(obs.x - 120, obs.y - swim.y);
-                if (distance < (obs.size + 10)) {
-                    state.minigame.active = false;
-                    let goldReward = Math.floor(state.minigame.score * 1.5);
-                    state.coins += goldReward; state.hearts += state.minigame.score;
-                    log(`Ouch! Touched a rock! Score: ${state.minigame.score}. Gained 🪙${goldReward}!`);
-                    updateUIValues(); closeAllPanels(); saveGameProgress(); ctx.restore(); return;
-                }
-                if(obs.x < 90) { swim.obstacles.splice(i, 1); state.minigame.score++; }
-            }
-            ctx.fillStyle = '#fff'; ctx.font = "bold 10px Courier New"; ctx.fillText(`Evaded Rocks: ${state.minigame.score}`, 115, 105);
-            ctx.restore();
-        }
-    }
-
-    if(state.isSleeping && state.dreamBubbles) {
-        state.dreamBubbles.forEach(bubble => {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-            ctx.strokeStyle = '#d4bda7'; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.arc(bubble.x, bubble.y, bubble.r || 18, 0, Math.PI * 2);
-            ctx.fill(); ctx.stroke();
-            
-            ctx.fillStyle = '#5c4a3c'; ctx.font = "14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(bubble.item, bubble.x, bubble.y);
-        });
-    }
-
-    requestAnimationFrame(renderLoop);
-}
-
-// --- CORE MASTER TICK LIFE TIMERS ---
-setInterval(() => {
-    updateEngine();
-    if(state.name && !state.isSleeping && Math.random() < 0.05 && state.dirtLayer < 6) {
-        state.dirtLayer += 1;
-        log(`${state.name} gathered some loose leaves! Tap the 'Sponge Tool' to clean them up.`);
-    }
-
-    if(state.name && state.isSleeping) {
-        if(!state.dreamBubbles) state.dreamBubbles = [];
-        state.dreamBubbles.forEach(b => { b.y -= b.speed; });
-        state.dreamBubbles = state.dreamBubbles.filter(b => b.y > 60);
-
-        if(Math.random() < 0.25 && state.dreamBubbles.length < 4) {
-            const pools = ['🦴', '🐟', '🧶', '🪴', '🌟', '🥞', '🦋', '🍄'];
-            state.dreamBubbles.push({
-                x: 120 + Math.random() * 310,
-                y: 230,
-                r: 18,
-                item: pools[Math.floor(Math.random() * pools.length)],
-                speed: 0.6 + Math.random() * 0.8
-            });
-        }
-    } else {
-        state.dreamBubbles = [];
-    }
-    updateUIValues();
-}, 1000);
-
-window.onload = () => {
-    loadGameProgress();
-};
-</script>
-</body>
-</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cottagecore Virtual Pet</title>
+    <title>Cottagecore Virtual Pet Sanctuary</title>
     <style>
         :root {
             --bg-color: #f4eae1;
@@ -28,7 +28,7 @@
             border: 4px dashed var(--border-color);
             border-radius: 20px;
             width: 100%;
-            max-width: 600px;
+            max-width: 620px;
             padding: 25px;
             box-shadow: 0 8px 16px rgba(92, 74, 60, 0.1);
             position: relative;
@@ -98,6 +98,7 @@
             width: 100%;
             height: 100%;
             display: block;
+            cursor: crosshair;
         }
         #thought-bubble {
             position: absolute;
@@ -191,15 +192,18 @@
 </head>
 <body>
 <div id="game-container">
-    <!-- TUTORIAL WINDOW OVERLAY -->
+    <!-- TUTORIAL STEP OVERLAY MASK -->
     <div id="tutorial-screen" class="tutorial-overlay hidden">
         <div class="tutorial-bubble">
             <p id="tutorial-text" style="color:var(--text-color); font-weight:bold; margin-bottom:12px;"></p>
-            <button class="btn" style="margin:0;" onclick="advanceTutorial()">Next ➔</button>
+            <div class="flex-center" style="margin: 0;">
+                <button class="btn" style="margin:5px;" onclick="advanceTutorial()">Next ➔</button>
+                <button class="btn" style="margin:5px; background-color:#b39274;" onclick="skipTutorial()">Skip ✖</button>
+            </div>
         </div>
     </div>
 
-    <!-- SCREEN 1: WELCOME & TYPE CHOICE -->
+    <!-- SCREEN 1: ADOPTION MENU -->
     <div id="screen-welcome" class="screen">
         <h1>🏡 Cottagecore Pets 🌿</h1>
         <p style="text-align:center; margin-bottom:20px;">Welcome to your cozy digital sanctuary. Choose a sweet companion to care for.</p>
@@ -211,7 +215,7 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: CUSTOMIZATION -->
+    <!-- SCREEN 2: METADATA ADOPTION DRAWER -->
     <div id="screen-custom" class="screen hidden">
         <h2 id="custom-title">Adopt your Friend</h2>
         <label for="pet-name">Give them a beautiful name:</label>
@@ -230,7 +234,7 @@
         
         <button class="btn" style="margin-top:20px; width:100%;" onclick="finalizePetCreation()">Bring Home ✨</button>
     </div>
-    <!-- SCREEN 3: MAIN GAMEPLAY LOOP -->
+    <!-- SCREEN 3: MAIN LOOP HUD SYSTEM -->
     <div id="screen-main" class="screen hidden">
         <div class="status-bar" id="screen-main-status">
             <div>🏡 <span id="display-pet-name">Pet</span> (<span id="display-pet-details">Breed</span>)</div>
@@ -243,7 +247,7 @@
             <canvas id="game-canvas" width="550" height="320"></canvas>
         </div>
 
-        <!-- Master controls -->
+        <!-- Master controls layout -->
         <div class="controls-grid" id="main-controls">
             <button class="btn" id="btn-play" onclick="openInteraction('play')">🧸 Play</button>
             <button class="btn" id="btn-feed" onclick="openInteraction('feed')">🧺 Market</button>
@@ -253,21 +257,34 @@
             <button class="btn" id="btn-decor" onclick="openInteraction('decor')">🎨 Decorate</button>
         </div>
 
-        <div class="flex-center" style="margin-top: 10px;">
+        <!-- Upgraded Care & Studio Utilities Bar -->
+        <div class="flex-center" style="margin-top: 8px; border: 1px dashed var(--border-color); padding: 5px; border-radius: 10px;">
+            <button class="btn" id="btn-sponge" style="background:#5c8a97;" onclick="activateSpongeTool()">🧼 Sponge Tool</button>
+            <button class="btn" style="background:#a67c52;" onclick="triggerPhotoDownload()">📸 Photo Album</button>
+            <button class="btn hidden" id="btn-forage" style="background:#bc8a5f;" onclick="claimWildForage()">🧺 Daily Forage</button>
+        </div>
+
+        <div class="flex-center" style="margin-top: 5px;">
             <button class="btn" style="background:#b39274" onclick="speakToPet('love')">🗣️ "I love you!"</button>
             <button class="btn" style="background:#b39274" onclick="speakToPet('night')">🗣️ "Good night!"</button>
             <button class="btn" style="background:#b39274" onclick="speakToPet('job')">🗣️ "Good job!"</button>
         </div>
-
         <!-- Sub Panels for Activities -->
         <div id="panel-feed" class="sub-panel hidden">
-            <h3>Village Market</h3>
-            <p style="font-size:11px; margin-bottom:8px; text-align:center;">Buy what your pet is wishing for right now!</p>
+            <h3>Village Market & Weather Machine</h3>
+            <div style="margin-bottom: 12px; padding: 6px; border-bottom: 1px solid var(--border-color);">
+                <label style="font-size:11px; font-weight:bold;">⛅ Set Room Weather Backdrop:</label>
+                <select id="weather-selector" onchange="adjustWeather(this.value)" style="margin-bottom:5px;">
+                    <option value="sunny">☀️ Crisp Sunshine</option>
+                    <option value="rainy">🌧️ Autumn Moss Rain</option>
+                    <option value="snowy">❄️ Winter Flurries</option>
+                </select>
+            </div>
             <div id="market-items-list"></div>
         </div>
 
         <div id="panel-decor" class="sub-panel hidden">
-            <h3>Habitat Decoration</h3>
+            <h3>Habitat Wallpapers & Styles</h3>
             <div id="decor-items-list"></div>
         </div>
 
@@ -276,7 +293,6 @@
             <div class="flex-center" style="margin-bottom: 8px;">
                 <button class="btn" id="btn-minigame-action" onclick="handleMinigameClick()">Action!</button>
             </div>
-            <!-- Dynamic Subgrid for Lizard Memory / Content Fallbacks -->
             <div id="lizard-memory-container"></div>
         </div>
 
@@ -284,7 +300,7 @@
     </div>
 </div>
 <script>
-// --- GAME STATE ARCHITECTURE ---
+// --- GLOBAL GAME STATE ARCHITECTURE ---
 const state = {
     type: '', name: '', gender: '', breed: '',
     hearts: 0, coins: 30,
@@ -292,7 +308,13 @@ const state = {
     wantedFood: '', thoughtTimer: 0,
     poops: [], activePanel: null,
     minigame: { type: '', active: false, score: 0, target: 0, data: {} },
-    tutorialStep: 0
+    tutorialStep: 0,
+    // Upgraded Features Config parameters mapping variables
+    weather: 'sunny',
+    wallpaper: 'plain',
+    spongeActive: false,
+    dirtLayer: 0,
+    lastForageTime: 0
 };
 
 const BREEDS = {
@@ -310,6 +332,8 @@ const MARKET_ITEMS = {
 };
 
 const DECOR_ITEMS = {
+    dog: [ {n:'🪵 Timber Panel', c:15, owned:false, active:false}, {n:'🧱 Cozy Brick', c:20, owned:false, active:false} ],
+    cat: [ {n:'🌸 Floral Print', c:15, owned:false, active:false}, {n:'🪵 Timber Panel', c:15, owned:false, active:false} ],
     fish: [ {n:'🪸 Neon Coral', c:10, owned:false, active:false}, {n:'🏰 Sunken Castle', c:20, owned:false, active:false}, {n:'🪵 Little Driftwood', c:8, owned:false, active:false} ],
     lizard: [ {n:'🌿 Hanging Ivy', c:8, owned:false, active:false}, {n:'🪵 Basking Log', c:12, owned:false, active:false}, {n:'🏜️ Desert Skull', c:18, owned:false, active:false} ]
 };
@@ -361,7 +385,7 @@ function selectPetType(type) {
 
     if(type === 'fish' || type === 'lizard') {
         document.getElementById('btn-decor').classList.remove('hidden');
-        document.getElementById('btn-play').classList.remove('hidden'); // Enabled for customized arcade games
+        document.getElementById('btn-play').classList.remove('hidden');
         document.getElementById('btn-walk').classList.add('hidden');
     } else {
         document.getElementById('btn-decor').classList.add('hidden');
@@ -386,15 +410,29 @@ function finalizePetCreation() {
     log(`Your adorable ${state.breed}, ${state.name}, arrived at your cottage!`);
     triggerNewThought();
     buildMarketUI();
-    if(state.type === 'fish' || state.type === 'lizard') buildDecorUI();
+    buildDecorUI();
     
+    saveGameProgress();
     startTutorial();
 }
-
 function startTutorial() {
     state.tutorialStep = 1;
     document.getElementById('tutorial-screen').classList.remove('hidden');
     showTutorialStep();
+}
+
+function skipTutorial() {
+    document.getElementById('btn-play').classList.remove('highlight-element');
+    document.getElementById('btn-feed').classList.remove('highlight-element');
+    document.getElementById('btn-pet').classList.remove('highlight-element');
+    document.getElementById('btn-walk').classList.remove('highlight-element');
+    document.getElementById('btn-sleep').classList.remove('highlight-element');
+    document.getElementById('btn-decor').classList.remove('highlight-element');
+    
+    state.tutorialStep = 0;
+    document.getElementById('tutorial-screen').classList.add('hidden');
+    log("Walkthrough dismissed! Tap 'Sponge Tool' or 'Photo Album' to check the new upgrades!");
+    saveGameProgress();
 }
 
 function advanceTutorial() {
@@ -408,6 +446,8 @@ function advanceTutorial() {
     state.tutorialStep++;
     if(state.tutorialStep > 5) {
         document.getElementById('tutorial-screen').classList.add('hidden');
+        state.tutorialStep = 0;
+        saveGameProgress();
     } else {
         showTutorialStep();
     }
@@ -417,27 +457,27 @@ function showTutorialStep() {
     const textEl = document.getElementById('tutorial-text');
     if(state.tutorialStep === 1) {
         if(state.type === 'dog' || state.type === 'cat') {
-            textEl.innerText = "This is the play button to play a mini-game! (note: only the dogs and cats have mini-games)";
+            textEl.innerText = "This is the play button to launch customized minigames!";
             document.getElementById('btn-play').classList.add('highlight-element');
         } else {
-            textEl.innerText = "This is the decorate button! Select cozy interior layers to populate your custom habitat room setup.";
+            textEl.innerText = "This is the decorate button! Place backgrounds and items into your custom companion container.";
             document.getElementById('btn-decor').classList.add('highlight-element');
         }
     } else if(state.tutorialStep === 2) {
-        textEl.innerText = "This is the market button. Press it to buy some food for your pet!";
+        textEl.innerText = "This is the market button. Buy snacks or toggle room weather conditions here!";
         document.getElementById('btn-feed').classList.add('highlight-element');
     } else if(state.tutorialStep === 3) {
-        textEl.innerText = "This is the pet button! petting your pet gives you coins to buy stuff with!";
+        textEl.innerText = "This is the pet button! Display affection to gain extra gold currency.";
         document.getElementById('btn-pet').classList.add('highlight-element');
     } else if(state.tutorialStep === 4) {
         if(state.type === 'dog' || state.type === 'cat') {
-            textEl.innerText = "This is the Forest walk button! Press this button to take your pet on a walk! (NOTE: this only works for dogs or cats)";
+            textEl.innerText = "This is the Forest walk button to forage out in the woodlands!";
             document.getElementById('btn-walk').classList.add('highlight-element');
         } else {
             advanceTutorial(); 
         }
     } else if(state.tutorialStep === 5) {
-        textEl.innerText = "This is the sleep button! Press it to have your pet take a nap!";
+        textEl.innerText = "This is the sleep button! Put your pet to rest to replenish their energetic metrics.";
         document.getElementById('btn-sleep').classList.add('highlight-element');
     }
 }
@@ -463,20 +503,18 @@ function openInteraction(panelType) {
             document.getElementById('minigame-title').innerText = "Catch the Flying Ball! 🎾";
             document.getElementById('btn-minigame-action').innerText = "Throw Ball!";
             state.minigame.type = 'dog_fetch';
-            state.minigame.data = { pos: 150, dir: 4, targetMin: 240, targetMax: 310 };
+            state.minigame.data = { pos: 150, dir: 5, targetMin: 240, targetMax: 310 };
         } else if(state.type === 'cat') {
             document.getElementById('minigame-title').innerText = "Yarn Matcher Game 🧶";
             document.getElementById('btn-minigame-action').innerText = "Quit Game";
             state.minigame.type = 'cat_match3';
-            state.minigame.score = 0;
-            state.minigame.target = 50;
+            state.minigame.score = 0; state.minigame.target = 50;
             state.minigame.data = { selectedIdx: null, grid: [] };
             initCatMatch3();
         } else if(state.type === 'fish') {
             document.getElementById('minigame-title').innerText = "🌊 Aquarium Swimming Avoidance";
             document.getElementById('btn-minigame-action').innerText = "Swim Upwards! 🏊‍♂️";
-            state.minigame.type = 'swim';
-            state.minigame.score = 0;
+            state.minigame.type = 'swim'; state.minigame.score = 0;
             state.minigame.data = { y: 140, vel: 0, obstacles: [], timer: 0 };
         } else if(state.type === 'lizard') {
             document.getElementById('minigame-title').innerText = "🌱 Forager's Memory Puzzle";
@@ -500,13 +538,60 @@ function closeAllPanels() {
 function updateUIValues() {
     document.getElementById('val-hearts').innerText = state.hearts;
     document.getElementById('val-coins').innerText = state.coins;
+    
+    // Evaluate daily forage timer display state logic metrics
+    const now = Date.now();
+    const btnForage = document.getElementById('btn-forage');
+    if(state.name && now - state.lastForageTime > 3600000) {
+        btnForage.classList.remove('hidden');
+    } else {
+        btnForage.classList.add('hidden');
+    }
 }
 
+// --- PERSISTENT STORAGE AUTO-SAVE FRAMEWORK ---
+function saveGameProgress() {
+    if(!state.name) return;
+    const packed = {
+        type: state.type, name: state.name, gender: state.gender, breed: state.breed,
+        hearts: state.hearts, coins: state.coins, weather: state.weather,
+        wallpaper: state.wallpaper, lastForageTime: state.lastForageTime,
+        decors: DECOR_ITEMS[state.type]
+    };
+    localStorage.setItem('cozy_pet_savefile', JSON.stringify(packed));
+}
+
+function loadGameProgress() {
+    const raw = localStorage.getItem('cozy_pet_savefile');
+    if(!raw) return;
+    try {
+        const parsed = JSON.parse(raw);
+        state.type = parsed.type; state.name = parsed.name; state.gender = parsed.gender; state.breed = parsed.breed;
+        state.hearts = parsed.hearts; state.coins = parsed.coins; state.weather = parsed.weather || 'sunny';
+        state.wallpaper = parsed.wallpaper || 'plain'; state.lastForageTime = parsed.lastForageTime || 0;
+        
+        if(parsed.decors && DECOR_ITEMS[state.type]) {
+            DECOR_ITEMS[state.type] = parsed.decors;
+        }
+        
+        document.getElementById('screen-welcome').classList.add('hidden');
+        document.getElementById('screen-main').classList.remove('hidden');
+        document.getElementById('display-pet-name').innerText = state.name;
+        document.getElementById('display-pet-details').innerText = `${state.gender === 'girl' ? '🎀' : '🧢'} ${state.breed}`;
+        document.getElementById('weather-selector').value = state.weather;
+        
+        log(`Welcome back! ${state.name} was waiting for you happily.`);
+        buildMarketUI(); buildDecorUI(); updateUIValues();
+        requestAnimationFrame(renderLoop);
+    } catch(err) {
+        console.error("Failed loading auto-save registry logs file.", err);
+    }
+}
 function petAnimal() {
     if(state.isSleeping) { log("Wake them up gently before petting!"); return; }
     state.hearts += 2; state.coins += 1;
     log(`You gently stroke ${state.name}. They lean in happily! (+2 Hearts, +1 Coin)`);
-    updateUIValues();
+    updateUIValues(); saveGameProgress();
 }
 
 function speakToPet(type) {
@@ -517,7 +602,7 @@ function speakToPet(type) {
     } else {
         log(`You say "Good job!". ${state.name} wiggles proudly! ⭐`);
     }
-    updateUIValues();
+    updateUIValues(); saveGameProgress();
 }
 
 function toggleSleep() {
@@ -533,6 +618,7 @@ function toggleSleep() {
         document.getElementById('btn-sleep').innerText = '💤 Sleep';
         triggerNewThought();
     }
+    saveGameProgress();
 }
 
 function toggleWalk() {
@@ -549,17 +635,64 @@ function toggleWalk() {
         log(`Back inside your warm, safe cottage room.`);
         document.getElementById('btn-walk').innerText = '🌲 Forest Walk';
     }
+    saveGameProgress();
 }
 
 function cleanMess(index) {
     state.poops.splice(index, 1);
     state.coins += 5; state.hearts += 1;
     log("You tidied up the path! Nature looks beautifully clean again. (+5 Coins)");
-    updateUIValues();
+    updateUIValues(); saveGameProgress();
+}
+
+// --- UPGRADED SPA CARE SPONGE METHOD LOGIC ---
+function activateSpongeTool() {
+    if(state.isSleeping) { log("Don't scrub your buddy while they rest!"); return; }
+    state.spongeActive = !state.spongeActive;
+    const btn = document.getElementById('btn-sponge');
+    if(state.spongeActive) {
+        btn.style.background = '#d98880';
+        log("Sponge active! Click and drag continuously across your pet on the canvas to wipe leaf layers clean!");
+    } else {
+        btn.style.background = '#5c8a97';
+        log("Sponge stored away.");
+    }
+}
+function adjustWeather(val) {
+    state.weather = val;
+    log(`The sky shifts outside the window. Environment: ${val.toUpperCase()} mode active!`);
+    saveGameProgress();
+}
+
+function triggerPhotoDownload() {
+    log("Opening photo album drawer... Creating PNG image file snapshot!");
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement('a');
+    link.download = `${state.name || 'pet'}_cozyroom.png`;
+    link.href = dataUrl;
+    link.click();
+}
+
+function claimWildForage() {
+    const now = Date.now();
+    if(now - state.lastForageTime < 3600000) { log("The forage basket fills up slowly! Check back in an hour."); return; }
+    
+    state.lastForageTime = now;
+    const rewards = [
+        { n: "🍄 Rare Chanterelle Cluster", g: 25 },
+        { n: "💐 Wild Lavender sprigs", g: 15 },
+        { n: "🪙 Pouch of lost travelers gold", g: 40 },
+        { n: "🍀 Lucky four-leaf clover", g: 20 }
+    ];
+    const prize = rewards[Math.floor(Math.random() * rewards.length)];
+    state.coins += prize.g; state.hearts += 5;
+    
+    log(`Forage discovery: Found [${prize.n}]! Added 🪙${prize.g} to wallet.`);
+    updateUIValues(); saveGameProgress();
 }
 
 function triggerNewThought() {
-    if(state.isSleeping || state.type === 'fish') {
+    if(state.isSleeping || state.type === 'fish' || state.spongeActive) {
         document.getElementById('thought-bubble').style.display = 'none';
         return;
     }
@@ -593,10 +726,8 @@ function buyFood(name, cost) {
         state.hearts += 4;
         log(`${state.name} contentedly enjoys the tasty ${name}.`);
     }
-    updateUIValues();
-    closeAllPanels();
+    updateUIValues(); closeAllPanels(); saveGameProgress();
 }
-
 function buildDecorUI() {
     const container = document.getElementById('decor-items-list');
     container.innerHTML = '';
@@ -611,29 +742,60 @@ function buildDecorUI() {
         container.appendChild(row);
     });
 }
+
 function buyDecor(index) {
     const item = DECOR_ITEMS[state.type][index];
     if(state.coins < item.c) { log("Not enough coins for this decoration."); return; }
     state.coins -= item.c; item.owned = true; item.active = true;
+    
+    // Evaluate if this specific structural element represents a full wallpaper swap
+    if(item.n.includes('Panel') || item.n.includes('Brick') || item.n.includes('Floral')) {
+        state.wallpaper = item.n;
+        // Enforce exclusive toggle filters rules on alternate wallpaper nodes
+        DECOR_ITEMS[state.type].forEach((other, oi) => { if(oi !== index && (other.n.includes('Panel') || other.n.includes('Brick') || other.n.includes('Floral'))) other.active = false; });
+    }
+    
     log(`Purchased and placed the lovely ${item.n}!`);
-    updateUIValues(); buildDecorUI();
+    updateUIValues(); buildDecorUI(); saveGameProgress();
 }
 
 function toggleDecor(index) {
     const item = DECOR_ITEMS[state.type][index];
     item.active = !item.active;
-    log(`${item.active ? 'Placed' : 'Stored'} ${item.n}.`);
-    buildDecorUI();
-}
-
-function updateEngine() {
-    if(state.wantedFood && !state.isSleeping) {
-        state.thoughtTimer--;
-        if(state.thoughtTimer <= 0) triggerNewThought();
+    
+    if(item.active && (item.n.includes('Panel') || item.n.includes('Brick') || item.n.includes('Floral'))) {
+        state.wallpaper = item.n;
+        DECOR_ITEMS[state.type].forEach((other, oi) => { if(oi !== index && (other.n.includes('Panel') || other.n.includes('Brick') || other.n.includes('Floral'))) other.active = false; });
+    } else if(!item.active && (item.n.includes('Panel') || item.n.includes('Brick') || item.n.includes('Floral'))) {
+        state.wallpaper = 'plain';
     }
+    
+    log(`${item.active ? 'Placed' : 'Stored'} ${item.n}.`);
+    buildDecorUI(); saveGameProgress();
 }
+// --- CANVAS EVENT LISTENERS INTERACTIVE MECHANICS ---
+canvas.addEventListener('mousemove', function(e) {
+    if(!state.spongeActive || state.dirtLayer <= 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    let cx = 250, cy = 180;
+    if(state.type === 'fish' || state.type === 'lizard') { cx = 240; cy = 150; }
+    
+    // Clean dirt layer when mouse vectors cross pet center zone limits
+    if(Math.hypot(mouseX - cx, mouseY - cy) < 60) {
+        state.dirtLayer -= 0.4;
+        if(state.dirtLayer <= 0) {
+            state.dirtLayer = 0; state.hearts += 10; state.coins += 5;
+            log(`Sparkling clean! You scrubbed all leaf clutter off ${state.name}! (+10 Hearts, +5 Gold)`);
+            state.spongeActive = false;
+            document.getElementById('btn-sponge').style.background = '#5c8a97';
+            updateUIValues(); saveGameProgress();
+        }
+    }
+});
 
-// --- INTERACTIVE ACTIONS & MINIGAMES ---
 canvas.addEventListener('click', function(e) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -665,14 +827,13 @@ canvas.addEventListener('click', function(e) {
                     const tmp = mg.data.grid[prev];
                     mg.data.grid[prev] = mg.data.grid[clickedIdx];
                     mg.data.grid[clickedIdx] = tmp;
-
                     mg.score += 10;
                     log(`Matched colored yarn! Gained +10 points!`);
                     
                     if(mg.score >= mg.target) {
                         state.hearts += 10; state.coins += 12;
                         log(`Success! You hit 50 points! ${state.name} rolling around in yarn layers. (+10 Hearts, +12 Coins)`);
-                        updateUIValues(); closeAllPanels();
+                        updateUIValues(); closeAllPanels(); saveGameProgress();
                     }
                 }
                 mg.data.selectedIdx = null;
@@ -693,9 +854,9 @@ function handleMinigameClick() {
             state.hearts += 2;
             log(`You overthrew. ${state.name} tracked it down in the grass anyway.`);
         }
-        updateUIValues(); closeAllPanels();
+        updateUIValues(); closeAllPanels(); saveGameProgress();
     } else if(state.minigame.type === 'swim') {
-        state.minigame.data.vel = -5.5; // Swimming upward thrust pull mechanics
+        state.minigame.data.vel = -5.5;
     } else if(state.minigame.type === 'cat_match3' || state.minigame.type === 'memory') {
         closeAllPanels();
     }
@@ -731,21 +892,19 @@ function initLizardMemoryGame() {
         
         card.onclick = () => {
             if(card.style.color !== 'transparent' || activeFlipped.length >= 2) return;
-            card.style.color = 'initial';
-            card.style.background = '#ffffff';
+            card.style.color = 'initial'; card.style.background = '#ffffff';
             activeFlipped.push(card);
             
             if(activeFlipped.length === 2) {
                 setTimeout(() => {
                     let [c1, c2] = activeFlipped;
                     if(c1.innerText === c2.innerText) {
-                        c1.style.visibility = 'hidden';
-                        c2.style.visibility = 'hidden';
+                        c1.style.visibility = 'hidden'; c2.style.visibility = 'hidden';
                         state.minigame.data.matchesNeeded--;
                         if(state.minigame.data.matchesNeeded === 0) {
                             state.coins += 20; state.hearts += 15;
                             log("Lizard matched all forage cards flawlessly! Earned 🪙20, 💕15!");
-                            updateUIValues(); closeAllPanels();
+                            updateUIValues(); closeAllPanels(); saveGameProgress();
                         }
                     } else {
                         c1.style.color = 'transparent'; c1.style.background = '#d4bda7';
@@ -759,22 +918,46 @@ function initLizardMemoryGame() {
     });
     panel.appendChild(gridDiv);
 }
-// --- RENDER ENGINE ---
+// --- RENDERING GRAPHICS LOGIC ---
 function renderLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Weather Backdrop Calculations
     if(state.isWalking) {
         ctx.fillStyle = '#bce3b5'; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.fillStyle = '#6fa867'; ctx.fillRect(0,0,canvas.width,120);
-        ctx.fillStyle = '#614834';
-        for(let i=30; i<550; i+=140) ctx.fillRect(i, 60, 20, 60);
-        ctx.fillStyle = '#3a6634';
-        for(let i=10; i<550; i+=140) { ctx.beginPath(); ctx.arc(40+i, 50, 45, 0, Math.PI*2); ctx.fill(); }
+        ctx.fillStyle = '#614834'; for(let i=30; i<550; i+=140) ctx.fillRect(i, 60, 20, 60);
+        ctx.fillStyle = '#3a6634'; for(let i=10; i<550; i+=140) { ctx.beginPath(); ctx.arc(40+i, 50, 45, 0, Math.PI*2); ctx.fill(); }
     } else {
-        ctx.fillStyle = '#fdf3e7'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        // Evaluate dynamic customized wallpaper theme selectors mapping conditions
+        if(state.wallpaper.includes('Panel')) ctx.fillStyle = '#d4a373';
+        else if(state.wallpaper.includes('Brick')) ctx.fillStyle = '#b5654d';
+        else if(state.wallpaper.includes('Floral')) ctx.fillStyle = '#e9edc9';
+        else ctx.fillStyle = '#fdf3e7';
+        
+        ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.fillStyle = '#eedcc5'; ctx.fillRect(0,220,canvas.width,100);
         ctx.strokeStyle = '#dfc3a7'; ctx.lineWidth = 2;
         for(let i=0; i<=canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,220); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+    }
+
+    // Dynamic Weather Particle Layer System Render Overlays
+    if(!state.isWalking && !state.minigame.active) {
+        if(state.weather === 'rainy') {
+            ctx.strokeStyle = 'rgba(174,214,241,0.6)'; ctx.lineWidth = 2;
+            for(let i=0; i<8; i++) {
+                let rx = (Date.now() + i * 70) % canvas.width;
+                let ry = (Date.now() * 1.5 + i * 40) % 220;
+                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 3, ry + 12); ctx.stroke();
+            }
+        } else if(state.weather === 'snowy') {
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            for(let i=0; i<12; i++) {
+                let sx = (Date.now()*0.3 + i * 50) % canvas.width;
+                let sy = (Date.now()*0.5 + i * 30) % 220;
+                ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI*2); ctx.fill();
+            }
+        }
     }
 
     if(state.type === 'fish') {
@@ -833,73 +1016,59 @@ function renderLoop() {
             ctx.fillStyle = pal.c1; ctx.fillRect(cx-20, cy+15, 20, 6);
             ctx.fillStyle = pal.e; ctx.fillRect(cx+62, cy+4, 4, 4);
         }
+        
+        // Draw leaf layer dirt texture if pet accumulated dirt patterns rules
+        if(state.dirtLayer > 0) {
+            ctx.fillStyle = '#7d8f76';
+            for(let i=0; i<Math.floor(state.dirtLayer); i++) {
+                ctx.fillRect(cx + 10 + (i*8)%40, cy + 5 + (i*12)%20, 6, 4);
+            }
+        }
     }
 
     if(state.minigame.active) {
         if(state.minigame.type === 'dog_fetch') {
             ctx.fillStyle = '#ccc'; ctx.fillRect(150, 20, 250, 25);
             ctx.fillStyle = '#6ebd71'; ctx.fillRect(240, 20, 70, 25);
-            
             state.minigame.data.pos += state.minigame.data.dir;
             if(state.minigame.data.pos > 390 || state.minigame.data.pos < 150) state.minigame.data.dir *= -1;
-            
             ctx.fillStyle = '#d94141'; ctx.fillRect(state.minigame.data.pos, 15, 6, 35);
         } else if(state.minigame.type === 'cat_match3') {
             ctx.fillStyle = 'rgba(255,254,249,0.96)'; ctx.fillRect(160, 15, 230, 220);
-            ctx.fillStyle = '#5c4a3c'; ctx.font = "bold 11px Courier New"; ctx.fillText(`Match Yarn! Points: ${state.minigame.score}/50`, 175, 35);
+            ctx.fillStyle = '#5c4a3c'; ctx.font = "bold 11px Courier New"; ctx.fillText(`Points: ${state.minigame.score}/50`, 175, 35);
             if(state.minigame.data.grid) {
                 state.minigame.data.grid.forEach((col, idx) => {
-                    let gx = 175 + (idx % 4) * 45;
-                    let gy = 55 + Math.floor(idx / 4) * 42;
+                    let gx = 175 + (idx % 4) * 45; let gy = 55 + Math.floor(idx / 4) * 42;
                     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(gx+22, gy+20, 16, 0, Math.PI*2); ctx.fill();
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                    if(state.minigame.data.selectedIdx === idx) {
-                        ctx.strokeStyle = '#d94141'; ctx.lineWidth = 3; ctx.stroke();
-                    }
+                    if(state.minigame.data.selectedIdx === idx) { ctx.strokeStyle = '#d94141'; ctx.lineWidth = 3; ctx.stroke(); }
                 });
             }
         } else if (state.minigame.type === 'swim') {
             ctx.fillStyle = 'rgba(26, 82, 118, 0.45)'; ctx.fillRect(100, 80, 350, 180);
             const swim = state.minigame.data;
-            
-            ctx.save();
-            ctx.beginPath(); ctx.rect(100, 80, 350, 180); ctx.clip();
-
+            ctx.save(); ctx.beginPath(); ctx.rect(100, 80, 350, 180); ctx.clip();
             ctx.fillStyle = '#fff'; ctx.font = "20px Arial"; ctx.fillText("🐟", 120, swim.y);
-
             swim.vel += 0.22; swim.y += swim.vel;
-
             if(swim.y < 95) { swim.y = 95; swim.vel = 0; }
             if(swim.y > 245) { swim.y = 245; swim.vel = 0; }
-
             swim.timer++;
-            if(swim.timer % 75 === 0) {
-                swim.obstacles.push({
-                    x: 450, y: 95 + Math.random() * 140, size: 10 + Math.random() * 12
-                });
-            }
-
+            if(swim.timer % 75 === 0) { swim.obstacles.push({ x: 450, y: 95 + Math.random() * 140, size: 10 + Math.random() * 12 }); }
             ctx.fillStyle = '#7f8c8d';
             for(let i = swim.obstacles.length - 1; i >= 0; i--) {
                 let obs = swim.obstacles[i]; obs.x -= 3.8;
                 ctx.font = `${obs.size * 1.5}px Arial`; ctx.fillText("🪨", obs.x, obs.y);
-
                 let distance = Math.hypot(obs.x - 120, obs.y - swim.y);
                 if (distance < (obs.size + 10)) {
                     state.minigame.active = false;
                     let goldReward = Math.floor(state.minigame.score * 1.5);
                     state.coins += goldReward; state.hearts += state.minigame.score;
                     log(`Ouch! Touched a rock! Score: ${state.minigame.score}. Gained 🪙${goldReward}!`);
-                    updateUIValues(); closeAllPanels(); ctx.restore(); return;
+                    updateUIValues(); closeAllPanels(); saveGameProgress(); ctx.restore(); return;
                 }
-
-                if(obs.x < 90) {
-                    swim.obstacles.splice(i, 1); state.minigame.score++;
-                }
+                if(obs.x < 90) { swim.obstacles.splice(i, 1); state.minigame.score++; }
             }
-
-            ctx.fillStyle = '#fff'; ctx.font = "bold 10px Courier New";
-            ctx.fillText(`Evaded Rocks: ${state.minigame.score}`, 115, 105);
+            ctx.fillStyle = '#fff'; ctx.font = "bold 10px Courier New"; ctx.fillText(`Evaded Rocks: ${state.minigame.score}`, 115, 105);
             ctx.restore();
         }
     }
@@ -907,11 +1076,20 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
 }
 
-// --- GLOBAL ENGINE TIMERS ---
+// --- CORE MASTER ENGINE INTERVAL TICKS ---
 setInterval(() => {
     updateEngine();
+    if(state.name && !state.isSleeping && Math.random() < 0.05 && state.dirtLayer < 6) {
+        state.dirtLayer += 1;
+        log(`${state.name} gathered some loose leaves! Tap the 'Sponge Tool' to clean them up.`);
+    }
     updateUIValues();
 }, 1000);
+
+// Initialize boot conditions evaluations checks variables
+window.onload = () => {
+    loadGameProgress();
+};
 </script>
 </body>
 </html>
